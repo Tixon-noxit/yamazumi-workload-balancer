@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Распределение нагрузки постов</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: "Arial Black", sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background: #1a1a1a;
+        color: #f0f0f0;
+        padding: 24px;
+    }
+
+    h1 {
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 24px;
+        color: #ffffff;
+        border-left: 8px solid #ffcc00;
+        padding-left: 16px;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 24px;
+    }
+
+    .panel {
+        background: #2a2a2a;
+        border: 4px solid #555;
+        padding: 20px;
+        box-shadow: 10px 10px 0 #111;
+    }
+
+    .panel h2 {
+        margin-top: 0;
+        text-transform: uppercase;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    .field {
+        margin-bottom: 16px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        color: #bbb;
+    }
+
+    input, select, button {
+        width: 100%;
+        padding: 12px;
+        border: 3px solid #666;
+        background: #111;
+        color: white;
+        font-size: 14px;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: #ffcc00;
+    }
+
+    button {
+        cursor: pointer;
+        background: #ffcc00;
+        color: black;
+        font-weight: bold;
+        transition: 0.15s;
+    }
+
+    button:hover {
+        background: #ffe066;
+        transform: translate(-2px, -2px);
+    }
+
+    .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .post-card {
+        background: #242424;
+        border: 4px solid #555;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .post-title {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 15px;
+        text-transform: uppercase;
+    }
+
+    .progress-wrapper {
+        height: 34px;
+        background: #111;
+        border: 3px solid #666;
+        position: relative;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        transition: 0.3s ease;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 13px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 2px black;
+    }
+
+    .operations {
+        margin-top: 14px;
+        font-size: 12px;
+        color: #bbb;
+        max-height: 120px;
+        overflow-y: auto;
+        border-top: 2px dashed #444;
+        padding-top: 10px;
+    }
+
+    .operation-item {
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #333;
+    }
+
+    .badge {
+        background: #000;
+        border: 2px solid #666;
+        padding: 2px 8px;
+        font-size: 11px;
+    }
+
+    .info-sec {
+        font-size: 11px;
+        color: #ffcc00;
+        margin-top: 8px;
+        text-align: center;
+        background: #1f1f1f;
+        padding: 4px;
+        border-radius: 6px;
+    }
+</style>
+</head>
+<body>
+
+<h1>Система распределения нагрузки (секунды)</h1>
+
+<div class="layout">
+
+    <div class="panel">
+        <h2>➕ Добавить операцию</h2>
+        
+        <div class="field">
+            <label> Название операции</label>
+            <input type="text" id="operationName" placeholder="Например: Сварка детали" autocomplete="off">
+        </div>
+
+        <div class="field">
+            <label>Время операции (секунды)</label>
+            <input type="number" id="operationTime" placeholder="Например: 45" step="1" min="1">
+        </div>
+
+        <div class="field">
+            <label> Пост</label>
+            <select id="postSelect"></select>
+        </div>
+
+        <div class="field">
+            <label>Максимальное время поста 100% (секунды)</label>
+            <input type="number" id="maxTime" value="28800">
+            <div class="info-sec">28800 сек = 8 часов (стандартная смена)</div>
+        </div>
+
+        <button onclick="addOperation()">
+             ДОБАВИТЬ ОПЕРАЦИЮ
+        </button>
+        <br>
+        <br>
+        <button onclick="exportToExcel()" style="background-color: #2e7d32;">
+            ВЫГРУЗИТЬ В EXCEL
+        </button>
+        <br><br>
+        <button onclick="resetAllData()" style="background-color: #8b0000;">
+            СБРОСИТЬ ВСЕ ДАННЫЕ
+        </button>
+    </div>
+
+    <div class="posts-grid" id="postsGrid"></div>
+
+</div>
+
+<script>
+    // ------------------------------
+    // 10 постов, работа с секундами
+    // ------------------------------
+    const posts = [];
+    const POSTS_COUNT = 10;
+
+    for (let i = 1; i <= POSTS_COUNT; i++) {
+        posts.push({
+            id: i,
+            operations: [],
+            totalTime: 0   // в секундах
+        });
+    }
+
+    const postSelect = document.getElementById("postSelect");
+    for (let i = 1; i <= POSTS_COUNT; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Пост ${i}`;
+        postSelect.appendChild(option);
+    }
+
+    // получить максимальное время для 100% (секунды)
+    function getMaxTime() {
+        let val = Number(document.getElementById("maxTime").value);
+        if (isNaN(val) || val <= 0) return 28800;  // 8 часов по умолчанию
+        return val;
+    }
+
+    // цвет в зависимости от процента
+    function getBarColor(percent) {
+        if (percent < 90) return "#27c93f";
+        if (percent >= 90 && percent < 100) return "#ffcc00";
+        return "#ff3b30";
+    }
+
+    // Форматирование секунд в читаемый вид (часы:минуты:секунды) для отображения
+    function formatTime(secondsTotal) {
+        if (secondsTotal === 0) return "0 сек";
+        const hrs = Math.floor(secondsTotal / 3600);
+        const mins = Math.floor((secondsTotal % 3600) / 60);
+        const secs = secondsTotal % 60;
+        
+        if (hrs > 0) {
+            return `${hrs} ч ${mins} мин ${secs} сек`;
+        } else if (mins > 0) {
+            return `${mins} мин ${secs} сек`;
+        } else {
+            return `${secs} сек`;
+        }
+    }
+
+    // Рендер карточек постов
+    function renderPosts() {
+        const container = document.getElementById("postsGrid");
+        container.innerHTML = "";
+        const maxTime = getMaxTime();
+
+        posts.forEach(post => {
+            let percent = 0;
+            if (maxTime > 0) {
+                percent = Math.round((post.totalTime / maxTime) * 100);
+                if (percent > 100) percent = 100; // визуально не вылезает
+            }
+            
+            const formattedTotal = formatTime(post.totalTime);
+            
+            const card = document.createElement("div");
+            card.className = "post-card";
+
+            // внутренний список операций с отображением в секундах + вспомогательный читаемый формат
+            let operationsHtml = "";
+            if (post.operations.length === 0) {
+                operationsHtml = "Нет операций";
+            } else {
+                operationsHtml = post.operations.map(op => {
+                    const readableTime = formatTime(op.time);
+                    return `<div class="operation-item">
+                        🔹 ${op.name} — ${op.time} сек (${readableTime})
+                    </div>`;
+                }).join("");
+            }
+
+            card.innerHTML = `
+                <div class="post-title">
+                    <span>⚙️ ПОСТ ${post.id}</span>
+                    <span class="badge">${formattedTotal}</span>
+                </div>
+
+                <div class="progress-wrapper">
+                    <div class="progress-bar"
+                         style="width:${Math.min(percent, 100)}%; background:${getBarColor(percent)};">
+                    </div>
+                    <div class="progress-text">
+                        ${percent}%  (${post.totalTime} / ${maxTime} сек)
+                    </div>
+                </div>
+
+                <div class="operations">
+                    ${operationsHtml}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Добавление операции (в секундах)
+    function addOperation() {
+        const name = document.getElementById("operationName").value.trim();
+        let timeSec = Number(document.getElementById("operationTime").value);
+        const postId = Number(document.getElementById("postSelect").value);
+
+        if (!name) {
+            alert("❌ Укажите название операции");
+            return;
+        }
+        
+        if (isNaN(timeSec) || timeSec <= 0) {
+            alert("❌ Введите корректное время операции в секундах (больше 0)");
+            return;
+        }
+        
+        // Округляем до целых секунд (на всякий случай)
+        timeSec = Math.floor(timeSec);
+        
+        const post = posts.find(p => p.id === postId);
+        if (!post) return;
+        
+        post.operations.push({
+            name: name,
+            time: timeSec
+        });
+        
+        post.totalTime += timeSec;
+        
+        // Очистить поля
+        document.getElementById("operationName").value = "";
+        document.getElementById("operationTime").value = "";
+        
+        renderPosts();
+    }
+    
+    // Сброс всех данных (очистка операций и обнуление времени)
+    function resetAllData() {
+        if (confirm("⚠️ ВНИМАНИЕ! Будут удалены ВСЕ операции на всех постах. Продолжить?")) {
+            for (let i = 0; i < posts.length; i++) {
+                posts[i].operations = [];
+                posts[i].totalTime = 0;
+            }
+            renderPosts();
+        }
+    }
+    
+    // Первичный рендер
+    renderPosts();
+
+</script>
+
+<!-- Подключение библиотеки XLSX для экспорта Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+    /*
+        ==========================================================
+        ЭКСПОРТ В EXCEL (Секунды + читаемый формат)
+        ==========================================================
+    */
+    function exportToExcel() {
+        const maxTime = getMaxTime();
+        const excelRows = [];
+        
+        // Дополнительная строка с информацией о лимите (для наглядности)
+        // Формируем детальные строки по каждой операции + добавим сводку по постам
+        
+        posts.forEach(post => {
+            const percentRaw = maxTime > 0 ? (post.totalTime / maxTime) * 100 : 0;
+            const percentDisplay = Math.round(percentRaw);
+            const totalTimeFormatted = formatTime(post.totalTime);
+            const maxTimeFormatted = formatTime(maxTime);
+            
+            if (post.operations.length === 0) {
+                // Пост без операций
+                excelRows.push({
+                    "Пост": `Пост ${post.id}`,
+                    "Операция": "— (нет операций)",
+                    "Время операции (сек)": 0,
+                    "Время операции (формат)": "0 сек",
+                    "Суммарная нагрузка (сек)": post.totalTime,
+                    "Суммарная нагрузка (формат)": totalTimeFormatted,
+                    "Лимит поста (сек)": maxTime,
+                    "Лимит поста (формат)": maxTimeFormatted,
+                    "Загрузка (%)": `${percentDisplay}%`
+                });
+            } else {
+                // Для каждой операции своя строка
+                post.operations.forEach(op => {
+                    const opTimeFormatted = formatTime(op.time);
+                    excelRows.push({
+                        "Пост": `Пост ${post.id}`,
+                        "Операция": op.name,
+                        "Время операции (сек)": op.time,
+                        "Время операции (формат)": opTimeFormatted,
+                        "Суммарная нагрузка (сек)": post.totalTime,
+                        "Суммарная нагрузка (формат)": totalTimeFormatted,
+                        "Лимит поста (сек)": maxTime,
+                        "Лимит поста (формат)": maxTimeFormatted,
+                        "Загрузка (%)": `${percentDisplay}%`
+                    });
+                });
+            }
+            
+            // Добавим строку-разделитель для наглядности (необязательно)
+            excelRows.push({
+                "Пост": `═══ ИТОГ ПОСТА ${post.id} ═══`,
+                "Операция": "———",
+                "Время операции (сек)": "",
+                "Время операции (формат)": "",
+                "Суммарная нагрузка (сек)": post.totalTime,
+                "Суммарная нагрузка (формат)": totalTimeFormatted,
+                "Лимит поста (сек)": maxTime,
+                "Лимит поста (формат)": maxTimeFormatted,
+                "Загрузка (%)": `${percentDisplay}%`
+            });
+        });
+        
+        // Добавим сводную строку с общей загрузкой по всем постам
+        const totalAllSeconds = posts.reduce((sum, p) => sum + p.totalTime, 0);
+        const totalAllFormatted = formatTime(totalAllSeconds);
+        excelRows.push({
+            "Пост": "ОБЩАЯ СВОДКА",
+            "Операция": "Суммарное время всех постов",
+            "Время операции (сек)": totalAllSeconds,
+            "Время операции (формат)": totalAllFormatted,
+            "Суммарная нагрузка (сек)": "",
+            "Суммарная нагрузка (формат)": "",
+            "Лимит поста (сек)": "",
+            "Лимит поста (формат)": "",
+            "Загрузка (%)": ""
+        });
+        
+        // Создаём workbook и worksheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(excelRows);
+        
+        // Установка ширины колонок (более комфортно)
+        worksheet["!cols"] = [
+            { wch: 18 },  // Пост
+            { wch: 32 },  // Операция
+            { wch: 20 },  // Время операции (сек)
+            { wch: 22 },  // Время операции (формат)
+            { wch: 24 },  // Суммарная нагрузка (сек)
+            { wch: 24 },  // Суммарная нагрузка (формат)
+            { wch: 20 },  // Лимит поста (сек)
+            { wch: 22 },  // Лимит поста (формат)
+            { wch: 16 }   // Загрузка (%)
+        ];
+        
+        // Стилизация заголовков (жирный шрифт через настройку стилей XLSX не поддерживается напрямую,
+        // но Excel сам откроет с нормальными заголовками. Дополнительно можно добавить автофильтр, но это необязательно.
+        
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Нагрузка постов (сек)");
+        
+        // Имя файла с датой
+        const date = new Date();
+        const formattedDate = 
+            date.getFullYear() + "-" +
+            String(date.getMonth() + 1).padStart(2, "0") + "-" +
+            String(date.getDate()).padStart(2, "0") + "_" +
+            String(date.getHours()).padStart(2, "0") + "-" +
+            String(date.getMinutes()).padStart(2, "0");
+            
+        const fileName = `Нагрузка_постов_секунды_${formattedDate}.xlsx`;
+        
+        XLSX.writeFile(workbook, fileName);
+    }
+</script>
+
+<!-- Дополнительное авто-обновление подсказок при изменении maxTime -->
+<script>
+    // При изменении максимального времени перерисовываем посты (актуальные проценты)
+    const maxTimeInput = document.getElementById("maxTime");
+    if (maxTimeInput) {
+        maxTimeInput.addEventListener("change", function() {
+            renderPosts();
+        });
+        maxTimeInput.addEventListener("input", function() {
+            renderPosts();
+        });
+    }
+    
+    // также при ручном добавлении перерисовка уже есть
+    // небольшая подсказка в консоль, что система работает в секундах
+    console.log("✅ Система загружена! Время операций указывается в СЕКУНДАХ.");
+</script>
+
+</body>
+</html>
