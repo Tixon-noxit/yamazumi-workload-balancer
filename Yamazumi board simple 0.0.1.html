@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Распределение нагрузки постов</title>
+<title>Yamazumi Board — загрузка постов (секунды) с Drag&Drop</title>
 
 <style>
     * {
         box-sizing: border-box;
-        font-family: "Arial Black", sans-serif;
+        font-family: "Arial Black", "Segoe UI", sans-serif;
     }
 
     body {
@@ -21,23 +21,52 @@
     h1 {
         text-transform: uppercase;
         letter-spacing: 3px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
         color: #ffffff;
         border-left: 8px solid #ffcc00;
         padding-left: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 14px;
+        background: #2a2a2a;
+        padding: 12px 20px;
+        border-radius: 40px;
+        border: 2px solid #555;
+    }
+
+    .toolbar button {
+        width: auto;
+        padding: 8px 20px;
+        background: #333;
+        border: 2px solid #777;
+        font-size: 13px;
+    }
+
+    .toolbar button:hover {
+        background: #ffcc00;
+        color: black;
+        border-color: #ffcc00;
     }
 
     .layout {
         display: grid;
-        grid-template-columns: 420px 1fr;
+        grid-template-columns: 380px 1fr;
         gap: 24px;
+        margin-top: 16px;
     }
 
     .panel {
         background: #2a2a2a;
         border: 4px solid #555;
         padding: 20px;
-        box-shadow: 10px 10px 0 #111;
+        box-shadow: 8px 8px 0 #111;
     }
 
     .panel h2 {
@@ -67,11 +96,6 @@
         font-size: 14px;
     }
 
-    input:focus, select:focus {
-        outline: none;
-        border-color: #ffcc00;
-    }
-
     button {
         cursor: pointer;
         background: #ffcc00;
@@ -89,14 +113,20 @@
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 18px;
+        align-items: start;
     }
 
     .post-card {
         background: #242424;
         border: 4px solid #555;
         padding: 16px;
-        position: relative;
-        overflow: hidden;
+        transition: 0.1s;
+    }
+
+    .post-card.drag-over {
+        border-color: #ffcc00;
+        background: #2e2e2e;
+        box-shadow: 0 0 0 2px #ffcc00;
     }
 
     .post-title {
@@ -112,12 +142,13 @@
         background: #111;
         border: 3px solid #666;
         position: relative;
+        margin-bottom: 12px;
     }
 
     .progress-bar {
         height: 100%;
         width: 0%;
-        transition: 0.3s ease;
+        transition: 0.2s;
     }
 
     .progress-text {
@@ -125,26 +156,64 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 13px;
+        font-size: 12px;
         font-weight: bold;
         color: white;
         text-shadow: 1px 1px 2px black;
+        white-space: nowrap;
     }
 
     .operations {
-        margin-top: 14px;
+        margin-top: 8px;
         font-size: 12px;
         color: #bbb;
-        max-height: 120px;
+        max-height: 200px;
         overflow-y: auto;
         border-top: 2px dashed #444;
         padding-top: 10px;
     }
 
     .operation-item {
-        margin-bottom: 6px;
-        padding-bottom: 6px;
-        border-bottom: 1px solid #333;
+        margin-bottom: 8px;
+        padding: 6px 8px;
+        background: #1e1e1e;
+        border-left: 4px solid #ffcc00;
+        cursor: grab;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        transition: 0.1s;
+    }
+
+    .operation-item:active {
+        cursor: grabbing;
+    }
+
+    .operation-info {
+        flex: 1;
+        word-break: break-word;
+    }
+
+    .op-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    .op-buttons button {
+        width: auto;
+        padding: 4px 8px;
+        font-size: 11px;
+        background: #333;
+        border: 1px solid #777;
+    }
+
+    .op-buttons button.edit-op {
+        background: #2c5f8a;
+    }
+
+    .op-buttons button.del-op {
+        background: #8b3c2c;
     }
 
     .badge {
@@ -163,137 +232,267 @@
         padding: 4px;
         border-radius: 6px;
     }
+
+    /* График */
+    .chart-container {
+        margin-top: 24px;
+        background: #1f1f1f;
+        border: 3px solid #444;
+        padding: 16px;
+    }
+
+    .chart-title {
+        font-size: 16px;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+
+    .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        height: 180px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+
+    .bar-wrapper {
+        flex: 1;
+        min-width: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .bar {
+        width: 100%;
+        background: #ffcc00;
+        transition: height 0.2s;
+        min-height: 4px;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .bar-label {
+        font-size: 11px;
+        text-align: center;
+    }
+
+    @media print {
+        body {
+            background: white;
+            color: black;
+            padding: 10px;
+        }
+        .panel, .toolbar, .op-buttons button, .chart-container .bar {
+            display: none;
+        }
+        .posts-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .post-card {
+            break-inside: avoid;
+            border: 2px solid black;
+            background: white;
+            color: black;
+        }
+        .progress-bar {
+            background: #ccc !important;
+        }
+        .operations {
+            color: black;
+        }
+        .badge, .info-sec {
+            color: black;
+        }
+    }
 </style>
 </head>
 <body>
 
-<h1>Система распределения нагрузки (секунды)</h1>
+<h1>
+     YAMAZUMI BOARD (секунды)
+    <div class="toolbar">
+        <button onclick="exportToExcel()"> EXCEL</button>
+        <button onclick="printReport()"> ПЕЧАТЬ</button>
+        <button onclick="resetAllData()"> СБРОС</button>
+    </div>
+</h1>
 
 <div class="layout">
-
     <div class="panel">
-        <h2>➕ Добавить операцию</h2>
-        
+        <h2>➕ Добавить / редактировать</h2>
         <div class="field">
             <label> Название операции</label>
-            <input type="text" id="operationName" placeholder="Например: Сварка детали" autocomplete="off">
+            <input type="text" id="operationName" placeholder="Например: Сварка">
         </div>
-
         <div class="field">
-            <label>Время операции (секунды)</label>
-            <input type="number" id="operationTime" placeholder="Например: 45" step="1" min="1">
+            <label> Время (секунды)</label>
+            <input type="number" id="operationTime" placeholder="45" step="1" min="1">
         </div>
-
         <div class="field">
             <label> Пост</label>
             <select id="postSelect"></select>
         </div>
-
         <div class="field">
-            <label>Максимальное время поста 100% (секунды)</label>
+            <label> Лимит поста 100% (сек)</label>
             <input type="number" id="maxTime" value="28800">
-            <div class="info-sec">28800 сек = 8 часов (стандартная смена)</div>
+            <div class="info-sec">⚡ 28800 сек = 8ч</div>
         </div>
-
-        <button onclick="addOperation()">
-             ДОБАВИТЬ ОПЕРАЦИЮ
-        </button>
-        <br>
-        <br>
-        <button onclick="exportToExcel()" style="background-color: #2e7d32;">
-            ВЫГРУЗИТЬ В EXCEL
-        </button>
-        <br><br>
-        <button onclick="resetAllData()" style="background-color: #8b0000;">
-            СБРОСИТЬ ВСЕ ДАННЫЕ
-        </button>
+        <button onclick="addOrUpdateOperation()"> ДОБАВИТЬ / СОХРАНИТЬ</button>
+        <div class="info-sec" style="margin-top: 12px;">💡 Редактирование: нажмите ✏️ у операции</div>
+        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию между постами</div>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
-
 </div>
 
+<div class="chart-container" id="chartContainer">
+    <div class="chart-title"> Загрузка постов (%)</div>
+    <div class="bar-chart" id="barChart"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
 <script>
-    // ------------------------------
-    // 10 постов, работа с секундами
-    // ------------------------------
-    const posts = [];
+    // ------------------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ------------------
+    let posts = [];
     const POSTS_COUNT = 10;
+    let editingContext = null; // { postId, opIndex } - какая операция редактируется
 
-    for (let i = 1; i <= POSTS_COUNT; i++) {
-        posts.push({
-            id: i,
-            operations: [],
-            totalTime: 0   // в секундах
-        });
+    // Инициализация или загрузка из localStorage
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem("yamazumi_seconds_data");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.posts && parsed.maxTime) {
+                    posts = parsed.posts;
+                    document.getElementById("maxTime").value = parsed.maxTime;
+                    return true;
+                }
+            } catch(e) { console.warn(e); }
+        }
+        // создаём посты по умолчанию
+        posts = [];
+        for (let i = 1; i <= POSTS_COUNT; i++) {
+            posts.push({
+                id: i,
+                operations: [],
+                totalTime: 0
+            });
+        }
+        return false;
     }
 
-    const postSelect = document.getElementById("postSelect");
-    for (let i = 1; i <= POSTS_COUNT; i++) {
-        const option = document.createElement("option");
-        option.value = i;
-        option.textContent = `Пост ${i}`;
-        postSelect.appendChild(option);
+    function saveToLocalStorage() {
+        const maxTime = getMaxTime();
+        const data = {
+            posts: posts,
+            maxTime: maxTime
+        };
+        localStorage.setItem("yamazumi_seconds_data", JSON.stringify(data));
     }
 
-    // получить максимальное время для 100% (секунды)
     function getMaxTime() {
         let val = Number(document.getElementById("maxTime").value);
-        if (isNaN(val) || val <= 0) return 28800;  // 8 часов по умолчанию
+        if (isNaN(val) || val <= 0) return 28800;
         return val;
     }
 
-    // цвет в зависимости от процента
-    function getBarColor(percent) {
-        if (percent < 90) return "#27c93f";
-        if (percent >= 90 && percent < 100) return "#ffcc00";
-        return "#ff3b30";
-    }
-
-    // Форматирование секунд в читаемый вид (часы:минуты:секунды) для отображения
     function formatTime(secondsTotal) {
         if (secondsTotal === 0) return "0 сек";
         const hrs = Math.floor(secondsTotal / 3600);
         const mins = Math.floor((secondsTotal % 3600) / 60);
         const secs = secondsTotal % 60;
-        
-        if (hrs > 0) {
-            return `${hrs} ч ${mins} мин ${secs} сек`;
-        } else if (mins > 0) {
-            return `${mins} мин ${secs} сек`;
-        } else {
-            return `${secs} сек`;
-        }
+        if (hrs > 0) return `${hrs}ч ${mins}мин ${secs}сек`;
+        if (mins > 0) return `${mins}мин ${secs}сек`;
+        return `${secs}сек`;
     }
 
-    // Рендер карточек постов
+    function getBarColor(percent) {
+        if (percent < 90) return "#27c93f";
+        if (percent < 100) return "#ffcc00";
+        return "#ff3b30";
+    }
+
+    // пересчёт totalTime для поста
+    function recalcPostTotal(post) {
+        let sum = 0;
+        for (let op of post.operations) sum += op.time;
+        post.totalTime = sum;
+    }
+
+    // обновить все totalTime
+    function refreshAllTotals() {
+        for (let p of posts) recalcPostTotal(p);
+    }
+
+    // Рендер карточек + диаграмма
+    function renderAll() {
+        renderPosts();
+        renderBarChart();
+        saveToLocalStorage();
+    }
+
     function renderPosts() {
         const container = document.getElementById("postsGrid");
         container.innerHTML = "";
         const maxTime = getMaxTime();
 
         posts.forEach(post => {
-            let percent = 0;
-            if (maxTime > 0) {
-                percent = Math.round((post.totalTime / maxTime) * 100);
-                if (percent > 100) percent = 100; // визуально не вылезает
-            }
-            
+            let percent = maxTime > 0 ? Math.min(100, Math.round((post.totalTime / maxTime) * 100)) : 0;
             const formattedTotal = formatTime(post.totalTime);
-            
             const card = document.createElement("div");
             card.className = "post-card";
+            card.setAttribute("data-post-id", post.id);
+            card.setAttribute("draggable", "false");
 
-            // внутренний список операций с отображением в секундах + вспомогательный читаемый формат
+            // События для drop
+            card.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                card.classList.add("drag-over");
+            });
+            card.addEventListener("dragleave", () => {
+                card.classList.remove("drag-over");
+            });
+            card.addEventListener("drop", (e) => {
+                e.preventDefault();
+                card.classList.remove("drag-over");
+                const draggedOpData = e.dataTransfer.getData("text/plain");
+                if (!draggedOpData) return;
+                const { sourcePostId, opIndex } = JSON.parse(draggedOpData);
+                const targetPostId = post.id;
+                if (sourcePostId === targetPostId) return;
+                // перемещаем операцию
+                const sourcePost = posts.find(p => p.id === sourcePostId);
+                const targetPost = posts.find(p => p.id === targetPostId);
+                if (sourcePost && targetPost && sourcePost.operations[opIndex]) {
+                    const [movedOp] = sourcePost.operations.splice(opIndex, 1);
+                    targetPost.operations.push(movedOp);
+                    recalcPostTotal(sourcePost);
+                    recalcPostTotal(targetPost);
+                    renderAll();
+                }
+            });
+
             let operationsHtml = "";
             if (post.operations.length === 0) {
-                operationsHtml = "Нет операций";
+                operationsHtml = "<div style='padding: 6px;'>📭 Нет операций</div>";
             } else {
-                operationsHtml = post.operations.map(op => {
-                    const readableTime = formatTime(op.time);
-                    return `<div class="operation-item">
-                        🔹 ${op.name} — ${op.time} сек (${readableTime})
-                    </div>`;
+                operationsHtml = post.operations.map((op, idx) => {
+                    const readable = formatTime(op.time);
+                    return `
+                        <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}">
+                            <div class="operation-info">
+                                🔹 ${escapeHtml(op.name)} — ${op.time} сек (${readable})
+                            </div>
+                            <div class="op-buttons">
+                                <button class="edit-op" data-post="${post.id}" data-idx="${idx}">✏️</button>
+                                <button class="del-op" data-post="${post.id}" data-idx="${idx}">🗑️</button>
+                            </div>
+                        </div>
+                    `;
                 }).join("");
             }
 
@@ -302,212 +501,223 @@
                     <span>⚙️ ПОСТ ${post.id}</span>
                     <span class="badge">${formattedTotal}</span>
                 </div>
-
                 <div class="progress-wrapper">
-                    <div class="progress-bar"
-                         style="width:${Math.min(percent, 100)}%; background:${getBarColor(percent)};">
-                    </div>
-                    <div class="progress-text">
-                        ${percent}%  (${post.totalTime} / ${maxTime} сек)
-                    </div>
+                    <div class="progress-bar" style="width:${percent}%; background:${getBarColor(percent)};"></div>
+                    <div class="progress-text">${percent}% (${post.totalTime}/${maxTime} сек)</div>
                 </div>
-
-                <div class="operations">
+                <div class="operations" id="ops-list-${post.id}">
                     ${operationsHtml}
                 </div>
             `;
+
             container.appendChild(card);
+
+            // Добавляем обработчики dragstart для всех draggable элементов внутри карточки
+            card.querySelectorAll(".operation-item[draggable='true']").forEach(el => {
+                el.addEventListener("dragstart", (e) => {
+                    const opIdx = el.getAttribute("data-op-index");
+                    const pId = el.getAttribute("data-post-id");
+                    e.dataTransfer.setData("text/plain", JSON.stringify({ sourcePostId: Number(pId), opIndex: Number(opIdx) }));
+                    e.dataTransfer.effectAllowed = "move";
+                });
+            });
+
+            // Кнопки редактирования / удаления
+            card.querySelectorAll(".edit-op").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const postId = Number(btn.getAttribute("data-post"));
+                    const idx = Number(btn.getAttribute("data-idx"));
+                    const post = posts.find(p => p.id === postId);
+                    if (post && post.operations[idx]) {
+                        const op = post.operations[idx];
+                        document.getElementById("operationName").value = op.name;
+                        document.getElementById("operationTime").value = op.time;
+                        document.getElementById("postSelect").value = postId;
+                        editingContext = { postId, opIndex: idx };
+                        // подсветка
+                        alert(`Редактирование: "${op.name}" → измените данные и нажмите кнопку добавления.`);
+                    }
+                });
+            });
+
+            card.querySelectorAll(".del-op").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const postId = Number(btn.getAttribute("data-post"));
+                    const idx = Number(btn.getAttribute("data-idx"));
+                    const post = posts.find(p => p.id === postId);
+                    if (post && post.operations[idx]) {
+                        if (confirm(`Удалить операцию "${post.operations[idx].name}"?`)) {
+                            post.operations.splice(idx, 1);
+                            recalcPostTotal(post);
+                            renderAll();
+                        }
+                    }
+                });
+            });
         });
     }
 
-    // Добавление операции (в секундах)
-    function addOperation() {
-        const name = document.getElementById("operationName").value.trim();
-        let timeSec = Number(document.getElementById("operationTime").value);
-        const postId = Number(document.getElementById("postSelect").value);
-
-        if (!name) {
-            alert("❌ Укажите название операции");
-            return;
-        }
-        
-        if (isNaN(timeSec) || timeSec <= 0) {
-            alert("❌ Введите корректное время операции в секундах (больше 0)");
-            return;
-        }
-        
-        // Округляем до целых секунд (на всякий случай)
-        timeSec = Math.floor(timeSec);
-        
-        const post = posts.find(p => p.id === postId);
-        if (!post) return;
-        
-        post.operations.push({
-            name: name,
-            time: timeSec
+    function renderBarChart() {
+        const maxTime = getMaxTime();
+        const chartDiv = document.getElementById("barChart");
+        chartDiv.innerHTML = "";
+        posts.forEach(post => {
+            let percent = maxTime > 0 ? (post.totalTime / maxTime) * 100 : 0;
+            percent = Math.min(100, percent);
+            const wrapper = document.createElement("div");
+            wrapper.className = "bar-wrapper";
+            const bar = document.createElement("div");
+            bar.className = "bar";
+            bar.style.height = `${Math.max(4, percent)}px`;
+            bar.style.backgroundColor = getBarColor(percent);
+            const label = document.createElement("div");
+            label.className = "bar-label";
+            label.innerText = `П${post.id}\n${Math.round(percent)}%`;
+            wrapper.appendChild(bar);
+            wrapper.appendChild(label);
+            chartDiv.appendChild(wrapper);
         });
-        
-        post.totalTime += timeSec;
-        
-        // Очистить поля
+    }
+
+    function addOrUpdateOperation() {
+        let name = document.getElementById("operationName").value.trim();
+        let timeSec = Number(document.getElementById("operationTime").value);
+        let postId = Number(document.getElementById("postSelect").value);
+
+        if (!name) { alert("Введите название операции"); return; }
+        if (isNaN(timeSec) || timeSec <= 0) { alert("Введите корректное время (секунды >0)"); return; }
+        timeSec = Math.floor(timeSec);
+
+        const targetPost = posts.find(p => p.id === postId);
+        if (!targetPost) return;
+
+        // Режим редактирования
+        if (editingContext !== null) {
+            const oldPost = posts.find(p => p.id === editingContext.postId);
+            if (oldPost && oldPost.operations[editingContext.opIndex]) {
+                // удаляем старую операцию
+                oldPost.operations.splice(editingContext.opIndex, 1);
+                recalcPostTotal(oldPost);
+                // добавляем изменённую операцию на выбранный пост (возможно, другой)
+                targetPost.operations.push({ name, time: timeSec });
+                recalcPostTotal(targetPost);
+                editingContext = null;
+                clearForm();
+                renderAll();
+                return;
+            }
+        }
+
+        // Обычное добавление
+        targetPost.operations.push({ name, time: timeSec });
+        recalcPostTotal(targetPost);
+        clearForm();
+        renderAll();
+    }
+
+    function clearForm() {
         document.getElementById("operationName").value = "";
         document.getElementById("operationTime").value = "";
-        
-        renderPosts();
+        editingContext = null;
     }
-    
-    // Сброс всех данных (очистка операций и обнуление времени)
+
     function resetAllData() {
-        if (confirm("⚠️ ВНИМАНИЕ! Будут удалены ВСЕ операции на всех постах. Продолжить?")) {
+        if (confirm("❗ ВСЕ операции будут удалены. Продолжить?")) {
             for (let i = 0; i < posts.length; i++) {
                 posts[i].operations = [];
                 posts[i].totalTime = 0;
             }
-            renderPosts();
+            editingContext = null;
+            clearForm();
+            renderAll();
         }
     }
-    
-    // Первичный рендер
-    renderPosts();
 
-</script>
+    // печать
+    function printReport() {
+        window.print();
+    }
 
-<!-- Подключение библиотеки XLSX для экспорта Excel -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-<script>
-    /*
-        ==========================================================
-        ЭКСПОРТ В EXCEL (Секунды + читаемый формат)
-        ==========================================================
-    */
+    // экспорт в Excel (расширенный)
     function exportToExcel() {
         const maxTime = getMaxTime();
-        const excelRows = [];
-        
-        // Дополнительная строка с информацией о лимите (для наглядности)
-        // Формируем детальные строки по каждой операции + добавим сводку по постам
-        
+        const rows = [];
         posts.forEach(post => {
-            const percentRaw = maxTime > 0 ? (post.totalTime / maxTime) * 100 : 0;
-            const percentDisplay = Math.round(percentRaw);
-            const totalTimeFormatted = formatTime(post.totalTime);
-            const maxTimeFormatted = formatTime(maxTime);
-            
+            const percent = maxTime > 0 ? Math.round((post.totalTime / maxTime) * 100) : 0;
+            const totalFmt = formatTime(post.totalTime);
+            const maxFmt = formatTime(maxTime);
             if (post.operations.length === 0) {
-                // Пост без операций
-                excelRows.push({
+                rows.push({
                     "Пост": `Пост ${post.id}`,
-                    "Операция": "— (нет операций)",
-                    "Время операции (сек)": 0,
-                    "Время операции (формат)": "0 сек",
-                    "Суммарная нагрузка (сек)": post.totalTime,
-                    "Суммарная нагрузка (формат)": totalTimeFormatted,
-                    "Лимит поста (сек)": maxTime,
-                    "Лимит поста (формат)": maxTimeFormatted,
-                    "Загрузка (%)": `${percentDisplay}%`
+                    "Операция": "(нет операций)",
+                    "Время (сек)": 0,
+                    "Время (формат)": "0 сек",
+                    "Суммарно (сек)": post.totalTime,
+                    "Суммарно (формат)": totalFmt,
+                    "Лимит (сек)": maxTime,
+                    "Лимит (формат)": maxFmt,
+                    "Загрузка %": `${percent}%`
                 });
             } else {
-                // Для каждой операции своя строка
                 post.operations.forEach(op => {
-                    const opTimeFormatted = formatTime(op.time);
-                    excelRows.push({
+                    rows.push({
                         "Пост": `Пост ${post.id}`,
                         "Операция": op.name,
-                        "Время операции (сек)": op.time,
-                        "Время операции (формат)": opTimeFormatted,
-                        "Суммарная нагрузка (сек)": post.totalTime,
-                        "Суммарная нагрузка (формат)": totalTimeFormatted,
-                        "Лимит поста (сек)": maxTime,
-                        "Лимит поста (формат)": maxTimeFormatted,
-                        "Загрузка (%)": `${percentDisplay}%`
+                        "Время (сек)": op.time,
+                        "Время (формат)": formatTime(op.time),
+                        "Суммарно (сек)": post.totalTime,
+                        "Суммарно (формат)": totalFmt,
+                        "Лимит (сек)": maxTime,
+                        "Лимит (формат)": maxFmt,
+                        "Загрузка %": `${percent}%`
                     });
                 });
             }
-            
-            // Добавим строку-разделитель для наглядности (необязательно)
-            excelRows.push({
-                "Пост": `═══ ИТОГ ПОСТА ${post.id} ═══`,
-                "Операция": "———",
-                "Время операции (сек)": "",
-                "Время операции (формат)": "",
-                "Суммарная нагрузка (сек)": post.totalTime,
-                "Суммарная нагрузка (формат)": totalTimeFormatted,
-                "Лимит поста (сек)": maxTime,
-                "Лимит поста (формат)": maxTimeFormatted,
-                "Загрузка (%)": `${percentDisplay}%`
-            });
+            rows.push({ "Пост": `--- ИТОГ ПОСТА ${post.id} ---`, "Операция": "", "Время (сек)": "", "Время (формат)": "", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
         });
-        
-        // Добавим сводную строку с общей загрузкой по всем постам
-        const totalAllSeconds = posts.reduce((sum, p) => sum + p.totalTime, 0);
-        const totalAllFormatted = formatTime(totalAllSeconds);
-        excelRows.push({
-            "Пост": "ОБЩАЯ СВОДКА",
-            "Операция": "Суммарное время всех постов",
-            "Время операции (сек)": totalAllSeconds,
-            "Время операции (формат)": totalAllFormatted,
-            "Суммарная нагрузка (сек)": "",
-            "Суммарная нагрузка (формат)": "",
-            "Лимит поста (сек)": "",
-            "Лимит поста (формат)": "",
-            "Загрузка (%)": ""
-        });
-        
-        // Создаём workbook и worksheet
-        const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(excelRows);
-        
-        // Установка ширины колонок (более комфортно)
-        worksheet["!cols"] = [
-            { wch: 18 },  // Пост
-            { wch: 32 },  // Операция
-            { wch: 20 },  // Время операции (сек)
-            { wch: 22 },  // Время операции (формат)
-            { wch: 24 },  // Суммарная нагрузка (сек)
-            { wch: 24 },  // Суммарная нагрузка (формат)
-            { wch: 20 },  // Лимит поста (сек)
-            { wch: 22 },  // Лимит поста (формат)
-            { wch: 16 }   // Загрузка (%)
-        ];
-        
-        // Стилизация заголовков (жирный шрифт через настройку стилей XLSX не поддерживается напрямую,
-        // но Excel сам откроет с нормальными заголовками. Дополнительно можно добавить автофильтр, но это необязательно.
-        
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Нагрузка постов (сек)");
-        
-        // Имя файла с датой
+        const totalAll = posts.reduce((s,p) => s + p.totalTime, 0);
+        rows.push({ "Пост": "📊 ОБЩАЯ СВОДКА", "Операция": "Сумма всех постов", "Время (сек)": totalAll, "Время (формат)": formatTime(totalAll), "Суммарно (сек)": "", "Суммарно (формат)": "", "Лимит (сек)": "", "Лимит (формат)": "", "Загрузка %": "" });
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [{wch:14},{wch:30},{wch:14},{wch:22},{wch:16},{wch:20},{wch:14},{wch:20},{wch:12}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Yamazumi");
         const date = new Date();
-        const formattedDate = 
-            date.getFullYear() + "-" +
-            String(date.getMonth() + 1).padStart(2, "0") + "-" +
-            String(date.getDate()).padStart(2, "0") + "_" +
-            String(date.getHours()).padStart(2, "0") + "-" +
-            String(date.getMinutes()).padStart(2, "0");
-            
-        const fileName = `Нагрузка_постов_секунды_${formattedDate}.xlsx`;
-        
-        XLSX.writeFile(workbook, fileName);
+        const fname = `Yamazumi_${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}.xlsx`;
+        XLSX.writeFile(wb, fname);
     }
-</script>
 
-<!-- Дополнительное авто-обновление подсказок при изменении maxTime -->
-<script>
-    // При изменении максимального времени перерисовываем посты (актуальные проценты)
-    const maxTimeInput = document.getElementById("maxTime");
-    if (maxTimeInput) {
-        maxTimeInput.addEventListener("change", function() {
-            renderPosts();
-        });
-        maxTimeInput.addEventListener("input", function() {
-            renderPosts();
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
         });
     }
-    
-    // также при ручном добавлении перерисовка уже есть
-    // небольшая подсказка в консоль, что система работает в секундах
-    console.log("✅ Система загружена! Время операций указывается в СЕКУНДАХ.");
-</script>
 
+    // инициализация postSelect
+    function initPostSelect() {
+        const select = document.getElementById("postSelect");
+        select.innerHTML = "";
+        for (let i=1; i<=POSTS_COUNT; i++) {
+            let opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = `Пост ${i}`;
+            select.appendChild(opt);
+        }
+    }
+
+    // слушатель изменения лимита
+    document.getElementById("maxTime").addEventListener("input", () => { renderAll(); });
+    window.addEventListener("load", () => {
+        initPostSelect();
+        loadFromLocalStorage();
+        refreshAllTotals();
+        renderAll();
+    });
+</script>
 </body>
 </html>
