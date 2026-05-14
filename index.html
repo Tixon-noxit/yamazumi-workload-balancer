@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />   
-<link rel="icon" type="image/x-icon" href="/assets/law.ico">
+<meta charset="UTF-8" />
+<link rel="icon" type="image/x-icon" href="law.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Yamazumi Board — загрузка постов (секунды) с Drag&Drop</title>
+<title>Yamazumi Board — Drag&Drop c вклиниванием операций</title>
 
 <style>
     * {
@@ -168,14 +168,16 @@
         margin-top: 8px;
         font-size: 12px;
         color: #bbb;
-        max-height: 200px;
+        max-height: 400px;
         overflow-y: auto;
         border-top: 2px dashed #444;
-        padding-top: 10px;
+        padding-top: 6px;
+        min-height: 100px;
     }
 
+    /* Стили для элементов операций — теперь поддерживают индикатор вставки */
     .operation-item {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         padding: 6px 8px;
         background: #1e1e1e;
         border-left: 4px solid #ffcc00;
@@ -185,10 +187,21 @@
         align-items: center;
         gap: 8px;
         transition: 0.1s;
+        position: relative;
     }
 
     .operation-item:active {
         cursor: grabbing;
+    }
+
+    /* Индикатор места вставки (горизонтальная линия) */
+    .insert-indicator {
+        height: 3px;
+        background: #ffcc00;
+        margin: 2px 0;
+        border-radius: 2px;
+        transition: 0.05s linear;
+        box-shadow: 0 0 4px #ffcc00;
     }
 
     .operation-info {
@@ -312,7 +325,7 @@
 <body>
 
 <h1>
-     YAMAZUMI BOARD (секунды)
+     YAMAZUMI BOARD (секунды) — вклинивание перетаскиванием
     <div class="toolbar">
         <button onclick="exportToExcel()"> EXCEL</button>
         <button onclick="printReport()"> ПЕЧАТЬ</button>
@@ -342,7 +355,8 @@
         </div>
         <button onclick="addOrUpdateOperation()"> ДОБАВИТЬ / СОХРАНИТЬ</button>
         <div class="info-sec" style="margin-top: 12px;">💡 Редактирование: нажмите ✏️ у операции</div>
-        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию между постами</div>
+        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию МЕЖДУ операциями для вклинивания</div>
+        <div class="info-sec">📌 При перетаскивании на пустую область поста — добавится в конец</div>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
@@ -359,7 +373,13 @@
     // ------------------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ------------------
     let posts = [];
     const POSTS_COUNT = 10;
-    let editingContext = null; // { postId, opIndex } - какая операция редактируется
+    let editingContext = null; // { postId, opIndex }
+    
+    // ---- Для drag & drop с вклиниванием ----
+    let dragSource = null;      // { postId, opIndex }
+    let currentDropTarget = null; // { postId, insertIndex } — куда вставим (insertIndex = позиция, перед которой вставлять)
+    let activeInsertPostId = null;
+    let activeInsertIndex = -1;
 
     // Инициализация или загрузка из localStorage
     function loadFromLocalStorage() {
@@ -417,23 +437,60 @@
         return "#ff3b30";
     }
 
-    // пересчёт totalTime для поста
     function recalcPostTotal(post) {
         let sum = 0;
         for (let op of post.operations) sum += op.time;
         post.totalTime = sum;
     }
 
-    // обновить все totalTime
     function refreshAllTotals() {
         for (let p of posts) recalcPostTotal(p);
     }
 
-    // Рендер карточек + диаграмма
+    // Функция перемещения операции с указанием точной позиции вставки (insertIndex — индекс, перед которым вставлять)
+    function moveOperationTo(sourcePostId, sourceOpIndex, targetPostId, targetInsertIndex) {
+        if (sourcePostId === targetPostId && sourceOpIndex === targetInsertIndex) return false;
+        if (sourcePostId === targetPostId && targetInsertIndex === sourceOpIndex + 1) return false; // нет смысла
+        
+        const sourcePost = posts.find(p => p.id === sourcePostId);
+        const targetPost = posts.find(p => p.id === targetPostId);
+        if (!sourcePost || !targetPost) return false;
+        if (sourceOpIndex < 0 || sourceOpIndex >= sourcePost.operations.length) return false;
+        
+        // Извлекаем операцию из исходного поста
+        const [movedOp] = sourcePost.operations.splice(sourceOpIndex, 1);
+        recalcPostTotal(sourcePost);
+        
+        // Вставляем в целевой пост на позицию targetInsertIndex
+        if (targetInsertIndex < 0 || targetInsertIndex > targetPost.operations.length) {
+            targetPost.operations.push(movedOp);
+        } else {
+            targetPost.operations.splice(targetInsertIndex, 0, movedOp);
+        }
+        recalcPostTotal(targetPost);
+        return true;
+    }
+
+    // ---- Очистка визуальных индикаторов вставки ----
+    function clearInsertIndicators() {
+        document.querySelectorAll('.insert-indicator').forEach(el => el.remove());
+        // Убираем подсветку дроп-зоны у карточек
+        document.querySelectorAll('.post-card').forEach(card => {
+            card.classList.remove('drag-over');
+        });
+        activeInsertPostId = null;
+        activeInsertIndex = -1;
+    }
+
+    // ---- Рендер всех карточек с возможностью детекции вставки (HTML + повторная инициализация) ----
     function renderAll() {
         renderPosts();
         renderBarChart();
         saveToLocalStorage();
+        // Сбрасываем контекст перетаскивания после рендера, чтобы не было артефактов
+        clearInsertIndicators();
+        dragSource = null;
+        currentDropTarget = null;
     }
 
     function renderPosts() {
@@ -448,43 +505,46 @@
             card.className = "post-card";
             card.setAttribute("data-post-id", post.id);
             card.setAttribute("draggable", "false");
-
-            // События для drop
+            
+            // Обработчики для дропа на сам пост (когда бросаем на пустое место карточки, но не на операцию)
             card.addEventListener("dragover", (e) => {
                 e.preventDefault();
+                // Если нет активного индикатора от операции, то подсвечиваем карточку (визуально)
                 card.classList.add("drag-over");
             });
-            card.addEventListener("dragleave", () => {
-                card.classList.remove("drag-over");
+            card.addEventListener("dragleave", (e) => {
+                if (!card.contains(e.relatedTarget)) {
+                    card.classList.remove("drag-over");
+                }
             });
             card.addEventListener("drop", (e) => {
                 e.preventDefault();
                 card.classList.remove("drag-over");
-                const draggedOpData = e.dataTransfer.getData("text/plain");
-                if (!draggedOpData) return;
-                const { sourcePostId, opIndex } = JSON.parse(draggedOpData);
+                // Если нет данных перетаскивания или нет dragSource - выходим
+                if (!dragSource) return;
+                // Бросаем на пустую область поста (без привязки к конкретной операции)
+                // Значит вставляем в конец списка операций
                 const targetPostId = post.id;
-                if (sourcePostId === targetPostId) return;
-                // перемещаем операцию
-                const sourcePost = posts.find(p => p.id === sourcePostId);
-                const targetPost = posts.find(p => p.id === targetPostId);
-                if (sourcePost && targetPost && sourcePost.operations[opIndex]) {
-                    const [movedOp] = sourcePost.operations.splice(opIndex, 1);
-                    targetPost.operations.push(movedOp);
-                    recalcPostTotal(sourcePost);
-                    recalcPostTotal(targetPost);
+                if (dragSource.postId === targetPostId) return;
+                const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, posts.find(p => p.id === targetPostId).operations.length);
+                if (success) {
+                    refreshAllTotals();
                     renderAll();
                 }
+                dragSource = null;
+                clearInsertIndicators();
             });
-
+            
+            // Создаем блок операций
             let operationsHtml = "";
             if (post.operations.length === 0) {
-                operationsHtml = "<div style='padding: 6px;'>📭 Нет операций</div>";
+                operationsHtml = "<div style='padding: 6px; color:#888;'>📭 Перетащите сюда или добавьте</div>";
             } else {
+                // Каждая операция будет рендериться с data-атрибутами, плюс добавим индикаторы между ними (но их визуал будет добавляться отдельно при dragover)
                 operationsHtml = post.operations.map((op, idx) => {
                     const readable = formatTime(op.time);
                     return `
-                        <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}">
+                        <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}" data-op-name="${escapeHtml(op.name)}">
                             <div class="operation-info">
                                 🔹 ${escapeHtml(op.name)} — ${op.time} сек (${readable})
                             </div>
@@ -496,7 +556,7 @@
                     `;
                 }).join("");
             }
-
+            
             card.innerHTML = `
                 <div class="post-title">
                     <span>⚙️ ПОСТ ${post.id}</span>
@@ -510,20 +570,184 @@
                     ${operationsHtml}
                 </div>
             `;
-
+            
             container.appendChild(card);
-
-            // Добавляем обработчики dragstart для всех draggable элементов внутри карточки
-            card.querySelectorAll(".operation-item[draggable='true']").forEach(el => {
+            
+            // Навешиваем обработчики перетаскивания для операций (draggable)
+            const opsContainer = card.querySelector('.operations');
+            const opItems = card.querySelectorAll(".operation-item[draggable='true']");
+            opItems.forEach(el => {
                 el.addEventListener("dragstart", (e) => {
-                    const opIdx = el.getAttribute("data-op-index");
-                    const pId = el.getAttribute("data-post-id");
-                    e.dataTransfer.setData("text/plain", JSON.stringify({ sourcePostId: Number(pId), opIndex: Number(opIdx) }));
+                    const opIdx = parseInt(el.getAttribute("data-op-index"));
+                    const pId = parseInt(el.getAttribute("data-post-id"));
+                    dragSource = { postId: pId, opIndex: opIdx };
+                    e.dataTransfer.setData("text/plain", JSON.stringify({ sourcePostId: pId, opIndex: opIdx }));
                     e.dataTransfer.effectAllowed = "move";
+                    // Стиль при перетаскивании
+                    e.target.style.opacity = "0.6";
+                });
+                el.addEventListener("dragend", (e) => {
+                    e.target.style.opacity = "";
+                    clearInsertIndicators();
+                    dragSource = null;
+                    currentDropTarget = null;
+                });
+                
+                // Обработчики для dragover/drop на каждую операцию - чтобы вклинивать ПЕРЕД/ПОСЛЕ
+                el.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!dragSource) return;
+                    
+                    const targetPostId = parseInt(el.getAttribute("data-post-id"));
+                    const targetOpIndex = parseInt(el.getAttribute("data-op-index"));
+                    const targetPost = posts.find(p => p.id === targetPostId);
+                    if (!targetPost) return;
+                    
+                    // Определяем позицию вставки: перед этой операцией? Или после неё, в зависимости от координат Y?
+                    // Чтобы было удобно: если курсор в верхней половине элемента - вставляем перед, в нижней - после.
+                    const rect = el.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const middle = rect.top + rect.height / 2;
+                    let insertIndex = targetOpIndex;
+                    if (mouseY > middle) {
+                        insertIndex = targetOpIndex + 1; // вставляем после текущей операции
+                    } else {
+                        insertIndex = targetOpIndex;   // вставляем перед текущей операцией
+                    }
+                    
+                    // Обновляем активный индикатор (отрисовка линии вставки)
+                    if (activeInsertPostId !== targetPostId || activeInsertIndex !== insertIndex) {
+                        clearInsertIndicators();
+                        activeInsertPostId = targetPostId;
+                        activeInsertIndex = insertIndex;
+                        // Рисуем линию в нужном месте внутри контейнера .operations
+                        const opsDiv = card.querySelector('.operations');
+                        if (opsDiv) {
+                            // Находим все .operation-item внутри, чтобы вставить индикатор
+                            const children = Array.from(opsDiv.querySelectorAll('.operation-item'));
+                            let indicator = document.createElement('div');
+                            indicator.className = 'insert-indicator';
+                            if (insertIndex === 0) {
+                                // Вставляем в начало
+                                opsDiv.insertBefore(indicator, children[0] || null);
+                            } else if (insertIndex >= children.length) {
+                                // Вставляем в конец
+                                opsDiv.appendChild(indicator);
+                            } else {
+                                // Вставляем перед элементом с индексом insertIndex
+                                opsDiv.insertBefore(indicator, children[insertIndex]);
+                            }
+                        }
+                    }
+                });
+                
+                el.addEventListener("dragleave", (e) => {
+                    // Не сбрасываем сразу, чтобы не моргало, но если покинули всю зону, сбросим позже через dragend
+                });
+                
+                el.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!dragSource) return;
+                    
+                    // Определяем точный индекс вставки (insertIndex), который был сохранён в activeInsertIndex
+                    let targetPostId = parseInt(el.getAttribute("data-post-id"));
+                    let targetOpIndex = parseInt(el.getAttribute("data-op-index"));
+                    const rect = el.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const middle = rect.top + rect.height / 2;
+                    let insertIndex = (mouseY > middle) ? targetOpIndex + 1 : targetOpIndex;
+                    
+                    // Дополнительная валидация: не пытаемся переместить в то же самое место
+                    if (dragSource.postId === targetPostId && dragSource.opIndex === insertIndex) {
+                        clearInsertIndicators();
+                        dragSource = null;
+                        return;
+                    }
+                    if (dragSource.postId === targetPostId && insertIndex === dragSource.opIndex + 1 && dragSource.opIndex === targetOpIndex && mouseY > middle) {
+                        clearInsertIndicators();
+                        dragSource = null;
+                        return;
+                    }
+                    
+                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, insertIndex);
+                    if (success) {
+                        refreshAllTotals();
+                        renderAll();
+                    } else {
+                        // Если перемещение не удалось, просто перерисовываем
+                        renderAll();
+                    }
+                    clearInsertIndicators();
+                    dragSource = null;
                 });
             });
-
-            // Кнопки редактирования / удаления
+            
+            // Обработчик для области .operations (фон) — чтобы можно было бросить операцию в пустую область, но уже обработано на карточке.
+            // Дополнительно для гарантии, если бросили между операциями точно отработает через drop на операции, но пустая зона уже есть у card.
+            // Однако нужно чтобы операции не перехватывали весь дроп, но drop на них уже есть.
+            // Дополнительно вешаем на контейнер операций обработчик dragover для показа вставки в конце, если нет операций
+            const opsDiv = card.querySelector('.operations');
+            if (opsDiv) {
+                opsDiv.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    if (!dragSource) return;
+                    // Если операций нет, показываем индикатор вставки в контейнере (пустой список)
+                    if (post.operations.length === 0) {
+                        if (activeInsertPostId !== post.id || activeInsertIndex !== 0) {
+                            clearInsertIndicators();
+                            activeInsertPostId = post.id;
+                            activeInsertIndex = 0;
+                            let indicator = document.createElement('div');
+                            indicator.className = 'insert-indicator';
+                            opsDiv.appendChild(indicator);
+                        }
+                        opsDiv.classList.add('drag-over');
+                    } else {
+                        // Если есть операции, но мы навели на свободное место после последней операции
+                        // Узнаём, есть ли уже индикатор в конце? определим по мыши
+                        const lastOp = opsDiv.querySelector('.operation-item:last-child');
+                        if (lastOp) {
+                            const rectLast = lastOp.getBoundingClientRect();
+                            if (e.clientY > rectLast.bottom) {
+                                if (activeInsertPostId !== post.id || activeInsertIndex !== post.operations.length) {
+                                    clearInsertIndicators();
+                                    activeInsertPostId = post.id;
+                                    activeInsertIndex = post.operations.length;
+                                    let indicator = document.createElement('div');
+                                    indicator.className = 'insert-indicator';
+                                    opsDiv.appendChild(indicator);
+                                }
+                            }
+                        }
+                    }
+                });
+                opsDiv.addEventListener("dragleave", (e) => {
+                    if (!opsDiv.contains(e.relatedTarget)) {
+                        if (!dragSource) clearInsertIndicators();
+                    }
+                });
+                opsDiv.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    if (!dragSource) return;
+                    let targetPostId = post.id;
+                    let insertIndex = activeInsertIndex !== -1 && activeInsertPostId === targetPostId ? activeInsertIndex : post.operations.length;
+                    if (insertIndex < 0) insertIndex = post.operations.length;
+                    
+                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, insertIndex);
+                    if (success) {
+                        refreshAllTotals();
+                        renderAll();
+                    } else {
+                        renderAll();
+                    }
+                    clearInsertIndicators();
+                    dragSource = null;
+                });
+            }
+            
+            // Кнопки редактирования и удаления
             card.querySelectorAll(".edit-op").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     e.stopPropagation();
@@ -536,12 +760,11 @@
                         document.getElementById("operationTime").value = op.time;
                         document.getElementById("postSelect").value = postId;
                         editingContext = { postId, opIndex: idx };
-                        // подсветка
-                        alert(`Редактирование: "${op.name}" → измените данные и нажмите кнопку добавления.`);
+                        alert(`Редактирование: "${op.name}" → измените данные и нажмите "ДОБАВИТЬ / СОХРАНИТЬ".`);
                     }
                 });
             });
-
+            
             card.querySelectorAll(".del-op").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     e.stopPropagation();
@@ -559,7 +782,7 @@
             });
         });
     }
-
+    
     function renderBarChart() {
         const maxTime = getMaxTime();
         const chartDiv = document.getElementById("barChart");
@@ -581,27 +804,22 @@
             chartDiv.appendChild(wrapper);
         });
     }
-
+    
     function addOrUpdateOperation() {
         let name = document.getElementById("operationName").value.trim();
         let timeSec = Number(document.getElementById("operationTime").value);
         let postId = Number(document.getElementById("postSelect").value);
-
         if (!name) { alert("Введите название операции"); return; }
         if (isNaN(timeSec) || timeSec <= 0) { alert("Введите корректное время (секунды >0)"); return; }
         timeSec = Math.floor(timeSec);
-
         const targetPost = posts.find(p => p.id === postId);
         if (!targetPost) return;
-
-        // Режим редактирования
+        
         if (editingContext !== null) {
             const oldPost = posts.find(p => p.id === editingContext.postId);
             if (oldPost && oldPost.operations[editingContext.opIndex]) {
-                // удаляем старую операцию
                 oldPost.operations.splice(editingContext.opIndex, 1);
                 recalcPostTotal(oldPost);
-                // добавляем изменённую операцию на выбранный пост (возможно, другой)
                 targetPost.operations.push({ name, time: timeSec });
                 recalcPostTotal(targetPost);
                 editingContext = null;
@@ -610,20 +828,18 @@
                 return;
             }
         }
-
-        // Обычное добавление
         targetPost.operations.push({ name, time: timeSec });
         recalcPostTotal(targetPost);
         clearForm();
         renderAll();
     }
-
+    
     function clearForm() {
         document.getElementById("operationName").value = "";
         document.getElementById("operationTime").value = "";
         editingContext = null;
     }
-
+    
     function resetAllData() {
         if (confirm("❗ ВСЕ операции будут удалены. Продолжить?")) {
             for (let i = 0; i < posts.length; i++) {
@@ -635,13 +851,9 @@
             renderAll();
         }
     }
-
-    // печать
-    function printReport() {
-        window.print();
-    }
-
-    // экспорт в Excel (расширенный)
+    
+    function printReport() { window.print(); }
+    
     function exportToExcel() {
         const maxTime = getMaxTime();
         const rows = [];
@@ -650,30 +862,10 @@
             const totalFmt = formatTime(post.totalTime);
             const maxFmt = formatTime(maxTime);
             if (post.operations.length === 0) {
-                rows.push({
-                    "Пост": `Пост ${post.id}`,
-                    "Операция": "(нет операций)",
-                    "Время (сек)": 0,
-                    "Время (формат)": "0 сек",
-                    "Суммарно (сек)": post.totalTime,
-                    "Суммарно (формат)": totalFmt,
-                    "Лимит (сек)": maxTime,
-                    "Лимит (формат)": maxFmt,
-                    "Загрузка %": `${percent}%`
-                });
+                rows.push({ "Пост": `Пост ${post.id}`, "Операция": "(нет операций)", "Время (сек)": 0, "Время (формат)": "0 сек", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
             } else {
                 post.operations.forEach(op => {
-                    rows.push({
-                        "Пост": `Пост ${post.id}`,
-                        "Операция": op.name,
-                        "Время (сек)": op.time,
-                        "Время (формат)": formatTime(op.time),
-                        "Суммарно (сек)": post.totalTime,
-                        "Суммарно (формат)": totalFmt,
-                        "Лимит (сек)": maxTime,
-                        "Лимит (формат)": maxFmt,
-                        "Загрузка %": `${percent}%`
-                    });
+                    rows.push({ "Пост": `Пост ${post.id}`, "Операция": op.name, "Время (сек)": op.time, "Время (формат)": formatTime(op.time), "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
                 });
             }
             rows.push({ "Пост": `--- ИТОГ ПОСТА ${post.id} ---`, "Операция": "", "Время (сек)": "", "Время (формат)": "", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
@@ -688,7 +880,7 @@
         const fname = `Yamazumi_${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}.xlsx`;
         XLSX.writeFile(wb, fname);
     }
-
+    
     function escapeHtml(str) {
         if (!str) return "";
         return str.replace(/[&<>]/g, function(m) {
@@ -698,8 +890,7 @@
             return m;
         });
     }
-
-    // инициализация postSelect
+    
     function initPostSelect() {
         const select = document.getElementById("postSelect");
         select.innerHTML = "";
@@ -710,8 +901,7 @@
             select.appendChild(opt);
         }
     }
-
-    // слушатель изменения лимита
+    
     document.getElementById("maxTime").addEventListener("input", () => { renderAll(); });
     window.addEventListener("load", () => {
         initPostSelect();
