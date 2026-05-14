@@ -4,12 +4,12 @@
 <meta charset="UTF-8" />
 <link rel="icon" type="image/x-icon" href="law.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Yamazumi Board — Drag&Drop c вклиниванием операций</title>
+<title>Yamazumi Board — официальный отчет с Drag&Drop</title>
 
 <style>
     * {
         box-sizing: border-box;
-        font-family: "Arial Black", "Segoe UI", sans-serif;
+        font-family: "Segoe UI", "Arial", sans-serif;
     }
 
     body {
@@ -17,6 +17,11 @@
         background: #1a1a1a;
         color: #f0f0f0;
         padding: 24px;
+    }
+
+    /* Экранный стиль */
+    .screen-only {
+        display: block;
     }
 
     h1 {
@@ -136,6 +141,7 @@
         margin-bottom: 12px;
         font-size: 15px;
         text-transform: uppercase;
+        font-weight: bold;
     }
 
     .progress-wrapper {
@@ -175,7 +181,6 @@
         min-height: 100px;
     }
 
-    /* Стили для элементов операций — теперь поддерживают индикатор вставки */
     .operation-item {
         margin-bottom: 6px;
         padding: 6px 8px;
@@ -194,7 +199,6 @@
         cursor: grabbing;
     }
 
-    /* Индикатор места вставки (горизонтальная линия) */
     .insert-indicator {
         height: 3px;
         background: #ffcc00;
@@ -247,7 +251,6 @@
         border-radius: 6px;
     }
 
-    /* График */
     .chart-container {
         margin-top: 24px;
         background: #1f1f1f;
@@ -292,32 +295,152 @@
         text-align: center;
     }
 
+    /* ========= ОФИЦИАЛЬНЫЙ МИНИМАЛИСТИЧНЫЙ СТИЛЬ ПЕЧАТИ ========= */
     @media print {
+        /* Скрываем все элементы интерфейса */
+        .toolbar, .panel, .chart-container, .op-buttons, 
+        .insert-indicator, .progress-wrapper, .info-sec,
+        button, .post-card .progress-wrapper {
+            display: none !important;
+        }
+
         body {
             background: white;
+            padding: 0;
+            margin: 0;
             color: black;
-            padding: 10px;
         }
-        .panel, .toolbar, .op-buttons button, .chart-container .bar {
-            display: none;
+
+        h1 {
+            color: black;
+            border-left: 4px solid #000;
+            padding-left: 12px;
+            font-size: 22px;
+            margin-bottom: 20px;
+            margin-top: 0;
         }
+
+        h1::after {
+            content: " • Отчет";
+            font-size: 14px;
+            font-weight: normal;
+            color: #444;
+        }
+
+        .layout {
+            display: block;
+            margin-top: 0;
+        }
+
         .posts-grid {
-            grid-template-columns: 1fr 1fr;
+            display: block;
+            gap: 0;
         }
+
         .post-card {
-            break-inside: avoid;
-            border: 2px solid black;
             background: white;
-            color: black;
+            border: 1px solid #ccc;
+            padding: 12px;
+            margin-bottom: 20px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            box-shadow: none;
         }
-        .progress-bar {
-            background: #ccc !important;
+
+        .post-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
         }
+
+        .badge {
+            border: 1px solid #aaa;
+            background: #f5f5f5;
+            color: #000;
+        }
+
         .operations {
-            color: black;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            margin-top: 8px;
+            max-height: none;
+            overflow: visible;
         }
-        .badge, .info-sec {
-            color: black;
+
+        .operation-item {
+            background: #fafafa;
+            border-left: 3px solid #333;
+            margin-bottom: 6px;
+            padding: 8px 6px;
+            cursor: default;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .operation-info {
+            color: #000;
+            font-size: 11pt;
+        }
+
+        /* Таблица сводки — минималистичный официальный стиль */
+        .print-summary {
+            display: block;
+            margin-top: 30px;
+            border-top: 2px solid #000;
+            padding-top: 15px;
+        }
+
+        .print-summary h3 {
+            font-size: 16px;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+        }
+
+        .summary-table th, .summary-table td {
+            border: 1px solid #aaa;
+            padding: 8px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .summary-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .signatures {
+            margin-top: 35px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10pt;
+            border-top: 1px dashed #aaa;
+            padding-top: 20px;
+        }
+
+        .sign-line {
+            width: 45%;
+        }
+
+        .sign-line p {
+            margin: 5px 0;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            font-size: 8pt;
+            text-align: center;
+            color: #555;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
         }
     }
 </style>
@@ -325,7 +448,7 @@
 <body>
 
 <h1>
-     YAMAZUMI BOARD (секунды) — вклинивание перетаскиванием
+     YAMAZUMI BOARD (секунды)
     <div class="toolbar">
         <button onclick="exportToExcel()"> EXCEL</button>
         <button onclick="printReport()"> ПЕЧАТЬ</button>
@@ -335,7 +458,7 @@
 
 <div class="layout">
     <div class="panel">
-        <h2>➕ Добавить / редактировать</h2>
+        <h2>Добавить / редактировать</h2>
         <div class="field">
             <label> Название операции</label>
             <input type="text" id="operationName" placeholder="Например: Сварка">
@@ -355,8 +478,7 @@
         </div>
         <button onclick="addOrUpdateOperation()"> ДОБАВИТЬ / СОХРАНИТЬ</button>
         <div class="info-sec" style="margin-top: 12px;">💡 Редактирование: нажмите ✏️ у операции</div>
-        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию МЕЖДУ операциями для вклинивания</div>
-        <div class="info-sec">📌 При перетаскивании на пустую область поста — добавится в конец</div>
+        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию МЕЖДУ постами при необходимости</div>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
@@ -373,15 +495,11 @@
     // ------------------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ------------------
     let posts = [];
     const POSTS_COUNT = 10;
-    let editingContext = null; // { postId, opIndex }
-    
-    // ---- Для drag & drop с вклиниванием ----
-    let dragSource = null;      // { postId, opIndex }
-    let currentDropTarget = null; // { postId, insertIndex } — куда вставим (insertIndex = позиция, перед которой вставлять)
+    let editingContext = null;
+    let dragSource = null;
     let activeInsertPostId = null;
     let activeInsertIndex = -1;
 
-    // Инициализация или загрузка из localStorage
     function loadFromLocalStorage() {
         const saved = localStorage.getItem("yamazumi_seconds_data");
         if (saved) {
@@ -394,31 +512,21 @@
                 }
             } catch(e) { console.warn(e); }
         }
-        // создаём посты по умолчанию
         posts = [];
         for (let i = 1; i <= POSTS_COUNT; i++) {
-            posts.push({
-                id: i,
-                operations: [],
-                totalTime: 0
-            });
+            posts.push({ id: i, operations: [], totalTime: 0 });
         }
         return false;
     }
 
     function saveToLocalStorage() {
         const maxTime = getMaxTime();
-        const data = {
-            posts: posts,
-            maxTime: maxTime
-        };
-        localStorage.setItem("yamazumi_seconds_data", JSON.stringify(data));
+        localStorage.setItem("yamazumi_seconds_data", JSON.stringify({ posts, maxTime }));
     }
 
     function getMaxTime() {
         let val = Number(document.getElementById("maxTime").value);
-        if (isNaN(val) || val <= 0) return 28800;
-        return val;
+        return (isNaN(val) || val <= 0) ? 28800 : val;
     }
 
     function formatTime(secondsTotal) {
@@ -438,59 +546,39 @@
     }
 
     function recalcPostTotal(post) {
-        let sum = 0;
-        for (let op of post.operations) sum += op.time;
-        post.totalTime = sum;
+        post.totalTime = post.operations.reduce((sum, op) => sum + op.time, 0);
     }
 
     function refreshAllTotals() {
-        for (let p of posts) recalcPostTotal(p);
+        posts.forEach(p => recalcPostTotal(p));
     }
 
-    // Функция перемещения операции с указанием точной позиции вставки (insertIndex — индекс, перед которым вставлять)
     function moveOperationTo(sourcePostId, sourceOpIndex, targetPostId, targetInsertIndex) {
-        if (sourcePostId === targetPostId && sourceOpIndex === targetInsertIndex) return false;
-        if (sourcePostId === targetPostId && targetInsertIndex === sourceOpIndex + 1) return false; // нет смысла
-        
         const sourcePost = posts.find(p => p.id === sourcePostId);
         const targetPost = posts.find(p => p.id === targetPostId);
         if (!sourcePost || !targetPost) return false;
         if (sourceOpIndex < 0 || sourceOpIndex >= sourcePost.operations.length) return false;
-        
-        // Извлекаем операцию из исходного поста
         const [movedOp] = sourcePost.operations.splice(sourceOpIndex, 1);
         recalcPostTotal(sourcePost);
-        
-        // Вставляем в целевой пост на позицию targetInsertIndex
-        if (targetInsertIndex < 0 || targetInsertIndex > targetPost.operations.length) {
-            targetPost.operations.push(movedOp);
-        } else {
-            targetPost.operations.splice(targetInsertIndex, 0, movedOp);
-        }
+        if (targetInsertIndex < 0 || targetInsertIndex > targetPost.operations.length) targetPost.operations.push(movedOp);
+        else targetPost.operations.splice(targetInsertIndex, 0, movedOp);
         recalcPostTotal(targetPost);
         return true;
     }
 
-    // ---- Очистка визуальных индикаторов вставки ----
     function clearInsertIndicators() {
         document.querySelectorAll('.insert-indicator').forEach(el => el.remove());
-        // Убираем подсветку дроп-зоны у карточек
-        document.querySelectorAll('.post-card').forEach(card => {
-            card.classList.remove('drag-over');
-        });
+        document.querySelectorAll('.post-card').forEach(card => card.classList.remove('drag-over'));
         activeInsertPostId = null;
         activeInsertIndex = -1;
     }
 
-    // ---- Рендер всех карточек с возможностью детекции вставки (HTML + повторная инициализация) ----
     function renderAll() {
         renderPosts();
         renderBarChart();
         saveToLocalStorage();
-        // Сбрасываем контекст перетаскивания после рендера, чтобы не было артефактов
         clearInsertIndicators();
         dragSource = null;
-        currentDropTarget = null;
     }
 
     function renderPosts() {
@@ -504,77 +592,57 @@
             const card = document.createElement("div");
             card.className = "post-card";
             card.setAttribute("data-post-id", post.id);
-            card.setAttribute("draggable", "false");
-            
-            // Обработчики для дропа на сам пост (когда бросаем на пустое место карточки, но не на операцию)
+
             card.addEventListener("dragover", (e) => {
                 e.preventDefault();
-                // Если нет активного индикатора от операции, то подсвечиваем карточку (визуально)
                 card.classList.add("drag-over");
             });
             card.addEventListener("dragleave", (e) => {
-                if (!card.contains(e.relatedTarget)) {
-                    card.classList.remove("drag-over");
-                }
+                if (!card.contains(e.relatedTarget)) card.classList.remove("drag-over");
             });
             card.addEventListener("drop", (e) => {
                 e.preventDefault();
                 card.classList.remove("drag-over");
-                // Если нет данных перетаскивания или нет dragSource - выходим
                 if (!dragSource) return;
-                // Бросаем на пустую область поста (без привязки к конкретной операции)
-                // Значит вставляем в конец списка операций
                 const targetPostId = post.id;
                 if (dragSource.postId === targetPostId) return;
                 const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, posts.find(p => p.id === targetPostId).operations.length);
-                if (success) {
-                    refreshAllTotals();
-                    renderAll();
-                }
+                if (success) { refreshAllTotals(); renderAll(); }
                 dragSource = null;
                 clearInsertIndicators();
             });
-            
-            // Создаем блок операций
+
             let operationsHtml = "";
             if (post.operations.length === 0) {
-                operationsHtml = "<div style='padding: 6px; color:#888;'>📭 Перетащите сюда или добавьте</div>";
+                operationsHtml = "<div style='padding: 6px; color:#888;'>Перетащите сюда или добавьте</div>";
             } else {
-                // Каждая операция будет рендериться с data-атрибутами, плюс добавим индикаторы между ними (но их визуал будет добавляться отдельно при dragover)
-                operationsHtml = post.operations.map((op, idx) => {
-                    const readable = formatTime(op.time);
-                    return `
-                        <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}" data-op-name="${escapeHtml(op.name)}">
-                            <div class="operation-info">
-                                🔹 ${escapeHtml(op.name)} — ${op.time} сек (${readable})
-                            </div>
-                            <div class="op-buttons">
-                                <button class="edit-op" data-post="${post.id}" data-idx="${idx}">✏️</button>
-                                <button class="del-op" data-post="${post.id}" data-idx="${idx}">🗑️</button>
-                            </div>
+                operationsHtml = post.operations.map((op, idx) => `
+                    <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}" data-op-name="${escapeHtml(op.name)}">
+                        <div class="operation-info">
+                            ${escapeHtml(op.name)} — ${op.time} сек (${formatTime(op.time)})
                         </div>
-                    `;
-                }).join("");
+                        <div class="op-buttons">
+                            <button class="edit-op" data-post="${post.id}" data-idx="${idx}" title="Изменить">✏️</button>
+                            <button class="del-op" data-post="${post.id}" data-idx="${idx}" title="Удалить">🗑️</button>
+                        </div>
+                    </div>
+                `).join("");
             }
-            
+
             card.innerHTML = `
                 <div class="post-title">
-                    <span>⚙️ ПОСТ ${post.id}</span>
+                    <span>ПОСТ ${post.id}</span>
                     <span class="badge">${formattedTotal}</span>
                 </div>
                 <div class="progress-wrapper">
                     <div class="progress-bar" style="width:${percent}%; background:${getBarColor(percent)};"></div>
                     <div class="progress-text">${percent}% (${post.totalTime}/${maxTime} сек)</div>
                 </div>
-                <div class="operations" id="ops-list-${post.id}">
-                    ${operationsHtml}
-                </div>
+                <div class="operations" id="ops-list-${post.id}">${operationsHtml}</div>
             `;
-            
             container.appendChild(card);
-            
-            // Навешиваем обработчики перетаскивания для операций (draggable)
-            const opsContainer = card.querySelector('.operations');
+
+            // Drag & drop логика для операций (вклинивание)
             const opItems = card.querySelectorAll(".operation-item[draggable='true']");
             opItems.forEach(el => {
                 el.addEventListener("dragstart", (e) => {
@@ -583,130 +651,71 @@
                     dragSource = { postId: pId, opIndex: opIdx };
                     e.dataTransfer.setData("text/plain", JSON.stringify({ sourcePostId: pId, opIndex: opIdx }));
                     e.dataTransfer.effectAllowed = "move";
-                    // Стиль при перетаскивании
                     e.target.style.opacity = "0.6";
                 });
                 el.addEventListener("dragend", (e) => {
                     e.target.style.opacity = "";
                     clearInsertIndicators();
                     dragSource = null;
-                    currentDropTarget = null;
                 });
-                
-                // Обработчики для dragover/drop на каждую операцию - чтобы вклинивать ПЕРЕД/ПОСЛЕ
                 el.addEventListener("dragover", (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     if (!dragSource) return;
-                    
                     const targetPostId = parseInt(el.getAttribute("data-post-id"));
                     const targetOpIndex = parseInt(el.getAttribute("data-op-index"));
-                    const targetPost = posts.find(p => p.id === targetPostId);
-                    if (!targetPost) return;
-                    
-                    // Определяем позицию вставки: перед этой операцией? Или после неё, в зависимости от координат Y?
-                    // Чтобы было удобно: если курсор в верхней половине элемента - вставляем перед, в нижней - после.
-                    const rect = el.getBoundingClientRect();
-                    const mouseY = e.clientY;
-                    const middle = rect.top + rect.height / 2;
-                    let insertIndex = targetOpIndex;
-                    if (mouseY > middle) {
-                        insertIndex = targetOpIndex + 1; // вставляем после текущей операции
-                    } else {
-                        insertIndex = targetOpIndex;   // вставляем перед текущей операцией
-                    }
-                    
-                    // Обновляем активный индикатор (отрисовка линии вставки)
-                    if (activeInsertPostId !== targetPostId || activeInsertIndex !== insertIndex) {
-                        clearInsertIndicators();
-                        activeInsertPostId = targetPostId;
-                        activeInsertIndex = insertIndex;
-                        // Рисуем линию в нужном месте внутри контейнера .operations
-                        const opsDiv = card.querySelector('.operations');
-                        if (opsDiv) {
-                            // Находим все .operation-item внутри, чтобы вставить индикатор
-                            const children = Array.from(opsDiv.querySelectorAll('.operation-item'));
-                            let indicator = document.createElement('div');
-                            indicator.className = 'insert-indicator';
-                            if (insertIndex === 0) {
-                                // Вставляем в начало
-                                opsDiv.insertBefore(indicator, children[0] || null);
-                            } else if (insertIndex >= children.length) {
-                                // Вставляем в конец
-                                opsDiv.appendChild(indicator);
-                            } else {
-                                // Вставляем перед элементом с индексом insertIndex
-                                opsDiv.insertBefore(indicator, children[insertIndex]);
-                            }
-                        }
-                    }
-                });
-                
-                el.addEventListener("dragleave", (e) => {
-                    // Не сбрасываем сразу, чтобы не моргало, но если покинули всю зону, сбросим позже через dragend
-                });
-                
-                el.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!dragSource) return;
-                    
-                    // Определяем точный индекс вставки (insertIndex), который был сохранён в activeInsertIndex
-                    let targetPostId = parseInt(el.getAttribute("data-post-id"));
-                    let targetOpIndex = parseInt(el.getAttribute("data-op-index"));
                     const rect = el.getBoundingClientRect();
                     const mouseY = e.clientY;
                     const middle = rect.top + rect.height / 2;
                     let insertIndex = (mouseY > middle) ? targetOpIndex + 1 : targetOpIndex;
-                    
-                    // Дополнительная валидация: не пытаемся переместить в то же самое место
-                    if (dragSource.postId === targetPostId && dragSource.opIndex === insertIndex) {
+                    if (activeInsertPostId !== targetPostId || activeInsertIndex !== insertIndex) {
                         clearInsertIndicators();
-                        dragSource = null;
-                        return;
+                        activeInsertPostId = targetPostId;
+                        activeInsertIndex = insertIndex;
+                        const opsDiv = card.querySelector('.operations');
+                        if (opsDiv) {
+                            const children = Array.from(opsDiv.querySelectorAll('.operation-item'));
+                            const indicator = document.createElement('div');
+                            indicator.className = 'insert-indicator';
+                            if (insertIndex === 0) opsDiv.insertBefore(indicator, children[0] || null);
+                            else if (insertIndex >= children.length) opsDiv.appendChild(indicator);
+                            else opsDiv.insertBefore(indicator, children[insertIndex]);
+                        }
                     }
-                    if (dragSource.postId === targetPostId && insertIndex === dragSource.opIndex + 1 && dragSource.opIndex === targetOpIndex && mouseY > middle) {
-                        clearInsertIndicators();
-                        dragSource = null;
-                        return;
-                    }
-                    
+                });
+                el.addEventListener("drop", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!dragSource) return;
+                    const targetPostId = parseInt(el.getAttribute("data-post-id"));
+                    const targetOpIndex = parseInt(el.getAttribute("data-op-index"));
+                    const rect = el.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const middle = rect.top + rect.height / 2;
+                    let insertIndex = (mouseY > middle) ? targetOpIndex + 1 : targetOpIndex;
                     const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, insertIndex);
-                    if (success) {
-                        refreshAllTotals();
-                        renderAll();
-                    } else {
-                        // Если перемещение не удалось, просто перерисовываем
-                        renderAll();
-                    }
+                    if (success) { refreshAllTotals(); renderAll(); }
                     clearInsertIndicators();
                     dragSource = null;
                 });
             });
-            
-            // Обработчик для области .operations (фон) — чтобы можно было бросить операцию в пустую область, но уже обработано на карточке.
-            // Дополнительно для гарантии, если бросили между операциями точно отработает через drop на операции, но пустая зона уже есть у card.
-            // Однако нужно чтобы операции не перехватывали весь дроп, но drop на них уже есть.
-            // Дополнительно вешаем на контейнер операций обработчик dragover для показа вставки в конце, если нет операций
+
+            // Обработка дропа на пустую область операций
             const opsDiv = card.querySelector('.operations');
             if (opsDiv) {
                 opsDiv.addEventListener("dragover", (e) => {
                     e.preventDefault();
                     if (!dragSource) return;
-                    // Если операций нет, показываем индикатор вставки в контейнере (пустой список)
                     if (post.operations.length === 0) {
                         if (activeInsertPostId !== post.id || activeInsertIndex !== 0) {
                             clearInsertIndicators();
                             activeInsertPostId = post.id;
                             activeInsertIndex = 0;
-                            let indicator = document.createElement('div');
+                            const indicator = document.createElement('div');
                             indicator.className = 'insert-indicator';
                             opsDiv.appendChild(indicator);
                         }
-                        opsDiv.classList.add('drag-over');
                     } else {
-                        // Если есть операции, но мы навели на свободное место после последней операции
-                        // Узнаём, есть ли уже индикатор в конце? определим по мыши
                         const lastOp = opsDiv.querySelector('.operation-item:last-child');
                         if (lastOp) {
                             const rectLast = lastOp.getBoundingClientRect();
@@ -715,7 +724,7 @@
                                     clearInsertIndicators();
                                     activeInsertPostId = post.id;
                                     activeInsertIndex = post.operations.length;
-                                    let indicator = document.createElement('div');
+                                    const indicator = document.createElement('div');
                                     indicator.className = 'insert-indicator';
                                     opsDiv.appendChild(indicator);
                                 }
@@ -723,31 +732,18 @@
                         }
                     }
                 });
-                opsDiv.addEventListener("dragleave", (e) => {
-                    if (!opsDiv.contains(e.relatedTarget)) {
-                        if (!dragSource) clearInsertIndicators();
-                    }
-                });
                 opsDiv.addEventListener("drop", (e) => {
                     e.preventDefault();
                     if (!dragSource) return;
-                    let targetPostId = post.id;
-                    let insertIndex = activeInsertIndex !== -1 && activeInsertPostId === targetPostId ? activeInsertIndex : post.operations.length;
-                    if (insertIndex < 0) insertIndex = post.operations.length;
-                    
-                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, insertIndex);
-                    if (success) {
-                        refreshAllTotals();
-                        renderAll();
-                    } else {
-                        renderAll();
-                    }
+                    let insertIndex = (activeInsertPostId === post.id && activeInsertIndex !== -1) ? activeInsertIndex : post.operations.length;
+                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, post.id, insertIndex);
+                    if (success) { refreshAllTotals(); renderAll(); }
                     clearInsertIndicators();
                     dragSource = null;
                 });
             }
-            
-            // Кнопки редактирования и удаления
+
+            // Кнопки редактирования/удаления
             card.querySelectorAll(".edit-op").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     e.stopPropagation();
@@ -760,29 +756,26 @@
                         document.getElementById("operationTime").value = op.time;
                         document.getElementById("postSelect").value = postId;
                         editingContext = { postId, opIndex: idx };
-                        alert(`Редактирование: "${op.name}" → измените данные и нажмите "ДОБАВИТЬ / СОХРАНИТЬ".`);
+                        alert(`Редактирование: "${op.name}" → измените данные и нажмите кнопку.`);
                     }
                 });
             });
-            
             card.querySelectorAll(".del-op").forEach(btn => {
                 btn.addEventListener("click", (e) => {
                     e.stopPropagation();
                     const postId = Number(btn.getAttribute("data-post"));
                     const idx = Number(btn.getAttribute("data-idx"));
                     const post = posts.find(p => p.id === postId);
-                    if (post && post.operations[idx]) {
-                        if (confirm(`Удалить операцию "${post.operations[idx].name}"?`)) {
-                            post.operations.splice(idx, 1);
-                            recalcPostTotal(post);
-                            renderAll();
-                        }
+                    if (post && post.operations[idx] && confirm(`Удалить операцию "${post.operations[idx].name}"?`)) {
+                        post.operations.splice(idx, 1);
+                        recalcPostTotal(post);
+                        renderAll();
                     }
                 });
             });
         });
     }
-    
+
     function renderBarChart() {
         const maxTime = getMaxTime();
         const chartDiv = document.getElementById("barChart");
@@ -804,17 +797,16 @@
             chartDiv.appendChild(wrapper);
         });
     }
-    
+
     function addOrUpdateOperation() {
         let name = document.getElementById("operationName").value.trim();
         let timeSec = Number(document.getElementById("operationTime").value);
         let postId = Number(document.getElementById("postSelect").value);
         if (!name) { alert("Введите название операции"); return; }
-        if (isNaN(timeSec) || timeSec <= 0) { alert("Введите корректное время (секунды >0)"); return; }
+        if (isNaN(timeSec) || timeSec <= 0) { alert("Введите корректное время (сек)"); return; }
         timeSec = Math.floor(timeSec);
         const targetPost = posts.find(p => p.id === postId);
         if (!targetPost) return;
-        
         if (editingContext !== null) {
             const oldPost = posts.find(p => p.id === editingContext.postId);
             if (oldPost && oldPost.operations[editingContext.opIndex]) {
@@ -833,27 +825,82 @@
         clearForm();
         renderAll();
     }
-    
+
     function clearForm() {
         document.getElementById("operationName").value = "";
         document.getElementById("operationTime").value = "";
         editingContext = null;
     }
-    
+
     function resetAllData() {
         if (confirm("❗ ВСЕ операции будут удалены. Продолжить?")) {
-            for (let i = 0; i < posts.length; i++) {
-                posts[i].operations = [];
-                posts[i].totalTime = 0;
-            }
+            posts.forEach(p => { p.operations = []; p.totalTime = 0; });
             editingContext = null;
             clearForm();
             renderAll();
         }
     }
-    
-    function printReport() { window.print(); }
-    
+
+    // Официальная печать с минималистичным шаблоном
+    function printReport() {
+        const originalTitle = document.title;
+        document.title = "Yamazumi Board";
+        
+        // Создаем контейнер для печатной сводки (будет добавлен временно)
+        const printContainer = document.createElement('div');
+        printContainer.className = 'print-summary';
+        const maxTime = getMaxTime();
+        const currentDate = new Date().toLocaleString('ru-RU');
+        
+        let summaryHTML = `<h3>Сводка по загрузке постов</h3>
+        <table class="summary-table">
+            <thead>
+                <tr><th>Пост</th><th>Суммарное время</th><th>Лимит (сек)</th><th>Загрузка (%)</th><th>Кол-во операций</th></tr>
+            </thead>
+            <tbody>`;
+        posts.forEach(post => {
+            const percent = maxTime > 0 ? Math.round((post.totalTime / maxTime) * 100) : 0;
+            summaryHTML += `<tr>
+                <td><strong>Пост ${post.id}</strong></td>
+                <td>${formatTime(post.totalTime)} (${post.totalTime} сек)</td>
+                <td>${formatTime(maxTime)} (${maxTime} сек)</td>
+                <td>${percent}%</td>
+                <td>${post.operations.length}</td>
+            </tr>`;
+        });
+        const totalAllTime = posts.reduce((sum, p) => sum + p.totalTime, 0);
+        const avgLoad = posts.length ? Math.round((totalAllTime / (posts.length * maxTime)) * 100) : 0;
+        summaryHTML += `<tr style="background:#f5f5f5;"><td><strong>ИТОГО / СРЕДНЕЕ</strong></td>
+            <td><strong>${formatTime(totalAllTime)}</strong></td>
+            <td>—</td>
+            <td><strong>${avgLoad}%</strong></td>
+            <td>${posts.reduce((sum,p) => sum + p.operations.length, 0)}</td>
+        </tr>`;
+        summaryHTML += `</tbody></table>
+        <div class="signatures">
+            <div class="sign-line">
+                <p>Руководитель участка: ___________________</p>
+                <p style="font-size:9px;">(Ф.И.О., подпись)</p>
+            </div>
+            <div class="sign-line">
+                <p>Инженер по организации труда: ___________________</p>
+                <p style="font-size:9px;">(Ф.И.О., подпись)</p>
+            </div>
+        </div>
+        <div class="footer-note">
+            Отчет сформирован: ${currentDate} | Система Yamazumi Board<br>
+        </div>`;
+        
+        printContainer.innerHTML = summaryHTML;
+        document.body.appendChild(printContainer);
+        
+        window.print();
+        
+        // Удаляем временный контейнер после печати
+        document.body.removeChild(printContainer);
+        document.title = originalTitle;
+    }
+
     function exportToExcel() {
         const maxTime = getMaxTime();
         const rows = [];
@@ -871,38 +918,28 @@
             rows.push({ "Пост": `--- ИТОГ ПОСТА ${post.id} ---`, "Операция": "", "Время (сек)": "", "Время (формат)": "", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
         });
         const totalAll = posts.reduce((s,p) => s + p.totalTime, 0);
-        rows.push({ "Пост": "📊 ОБЩАЯ СВОДКА", "Операция": "Сумма всех постов", "Время (сек)": totalAll, "Время (формат)": formatTime(totalAll), "Суммарно (сек)": "", "Суммарно (формат)": "", "Лимит (сек)": "", "Лимит (формат)": "", "Загрузка %": "" });
+        rows.push({ "Пост": "ОБЩАЯ СВОДКА", "Операция": "Сумма всех постов", "Время (сек)": totalAll, "Время (формат)": formatTime(totalAll), "Суммарно (сек)": "", "Суммарно (формат)": "", "Лимит (сек)": "", "Лимит (формат)": "", "Загрузка %": "" });
         const ws = XLSX.utils.json_to_sheet(rows);
         ws["!cols"] = [{wch:14},{wch:30},{wch:14},{wch:22},{wch:16},{wch:20},{wch:14},{wch:20},{wch:12}];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Yamazumi");
-        const date = new Date();
-        const fname = `Yamazumi_${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}.xlsx`;
-        XLSX.writeFile(wb, fname);
+        XLSX.writeFile(wb, `Yamazumi_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
     }
-    
+
     function escapeHtml(str) {
         if (!str) return "";
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
+        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m));
     }
-    
+
     function initPostSelect() {
         const select = document.getElementById("postSelect");
         select.innerHTML = "";
-        for (let i=1; i<=POSTS_COUNT; i++) {
-            let opt = document.createElement("option");
-            opt.value = i;
-            opt.textContent = `Пост ${i}`;
-            select.appendChild(opt);
+        for (let i = 1; i <= POSTS_COUNT; i++) {
+            select.appendChild(new Option(`Пост ${i}`, i));
         }
     }
-    
-    document.getElementById("maxTime").addEventListener("input", () => { renderAll(); });
+
+    document.getElementById("maxTime").addEventListener("input", () => renderAll());
     window.addEventListener("load", () => {
         initPostSelect();
         loadFromLocalStorage();
