@@ -2,300 +2,311 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<link rel="icon" type="image/x-icon" href="law.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Yamazumi Board — официальный отчет с Drag&Drop</title>
+<title>Yamazumi Board Lean Edition</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-    * {
-        box-sizing: border-box;
-        font-family: "Segoe UI", "Arial", sans-serif;
-    }
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
 
-    body {
-        margin: 0;
-        background: #1a1a1a;
-        color: #f0f0f0;
-        padding: 24px;
-    }
+body {
+    margin: 0;
+    padding: 24px;
+    background: #1a1a1a;
+    color: #f5f5f5;
+}
 
-    /* Экранный стиль */
-    .screen-only {
-        display: block;
-    }
+h1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    text-transform: uppercase;
+    border-left: 8px solid #ffcc00;
+    padding-left: 16px;
+}
 
-    h1 {
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin-bottom: 16px;
-        color: #ffffff;
-        border-left: 8px solid #ffcc00;
-        padding-left: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
+.toolbar {
+    display: flex;
+    gap: 12px;
+}
 
-    .toolbar {
-        display: flex;
-        gap: 14px;
-        background: #2a2a2a;
-        padding: 12px 20px;
-        border-radius: 40px;
-        border: 2px solid #555;
-    }
+button {
+    border: none;
+    cursor: pointer;
+    background: #ffcc00;
+    color: #000;
+    font-weight: bold;
+    padding: 10px 16px;
+    transition: background 0.2s;
+}
 
-    .toolbar button {
-        width: auto;
-        padding: 8px 20px;
-        background: #333;
-        border: 2px solid #777;
-        font-size: 13px;
-    }
+button:hover {
+    background: #e6b800;
+}
 
-    .toolbar button:hover {
-        background: #ffcc00;
-        color: black;
-        border-color: #ffcc00;
-    }
+.layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+}
 
-    .layout {
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        gap: 24px;
-        margin-top: 16px;
-    }
+.panel {
+    background: #262626;
+    border: 4px solid #444;
+    padding: 20px;
+    margin-bottom: 24px;
+}
 
-    .panel {
-        background: #2a2a2a;
-        border: 4px solid #555;
-        padding: 20px;
-        box-shadow: 8px 8px 0 #111;
-    }
+.panel h2 {
+    margin-top: 0;
+    text-transform: uppercase;
+}
 
-    .panel h2 {
-        margin-top: 0;
-        text-transform: uppercase;
-        font-size: 18px;
-        margin-bottom: 20px;
-    }
+.field {
+    margin-bottom: 14px;
+}
 
-    .field {
-        margin-bottom: 16px;
-    }
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #ccc;
+}
 
-    label {
-        display: block;
-        margin-bottom: 6px;
-        font-size: 13px;
-        color: #bbb;
-    }
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #555;
+    background: #111;
+    color: white;
+}
 
-    input, select, button {
-        width: 100%;
-        padding: 12px;
-        border: 3px solid #666;
-        background: #111;
-        color: white;
-        font-size: 14px;
-    }
+.posts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
 
-    button {
-        cursor: pointer;
-        background: #ffcc00;
-        color: black;
-        font-weight: bold;
-        transition: 0.15s;
-    }
+.post-card {
+    background: #242424;
+    border: 4px solid #555;
+    padding: 16px;
+    transition: .15s;
+}
 
-    button:hover {
-        background: #ffe066;
-        transform: translate(-2px, -2px);
-    }
+.post-card.drag-over {
+    border-color: #ffcc00;
+}
 
-    .posts-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
-        align-items: start;
-    }
+.post-title {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
 
-    .post-card {
-        background: #242424;
-        border: 4px solid #555;
-        padding: 16px;
-        transition: 0.1s;
-    }
+.progress-wrapper {
+    height: 34px;
+    background: #111;
+    border: 3px solid #666;
+    position: relative;
+    margin-bottom: 12px;
+}
 
-    .post-card.drag-over {
-        border-color: #ffcc00;
-        background: #2e2e2e;
-        box-shadow: 0 0 0 2px #ffcc00;
-    }
+.progress-bar {
+    height: 100%;
+    transition: .2s;
+}
 
-    .post-title {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        font-size: 15px;
-        text-transform: uppercase;
-        font-weight: bold;
-    }
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+}
 
-    .progress-wrapper {
-        height: 34px;
-        background: #111;
-        border: 3px solid #666;
-        position: relative;
-        margin-bottom: 12px;
-    }
+.operations {
+    border-top: 2px dashed #444;
+    padding-top: 10px;
+    min-height: 80px;
+}
 
-    .progress-bar {
-        height: 100%;
-        width: 0%;
-        transition: 0.2s;
-    }
+.operation-item {
+    background: #1e1e1e;
+    border-left: 4px solid #ffcc00;
+    padding: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    cursor: grab;
+}
 
-    .progress-text {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        font-weight: bold;
-        color: white;
-        text-shadow: 1px 1px 2px black;
-        white-space: nowrap;
-    }
+.operation-item:active {
+    cursor: grabbing;
+}
 
-    .operations {
-        margin-top: 8px;
-        font-size: 12px;
-        color: #bbb;
-        max-height: 400px;
-        overflow-y: auto;
-        border-top: 2px dashed #444;
-        padding-top: 6px;
-        min-height: 100px;
-    }
+.op-info {
+    cursor: pointer;
+    flex-grow: 1;
+}
 
-    .operation-item {
-        margin-bottom: 6px;
-        padding: 6px 8px;
-        background: #1e1e1e;
-        border-left: 4px solid #ffcc00;
-        cursor: grab;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        transition: 0.1s;
-        position: relative;
-    }
+.op-info:hover {
+    color: #ffcc00;
+}
 
-    .operation-item:active {
-        cursor: grabbing;
-    }
+.op-buttons {
+    display: flex;
+    gap: 6px;
+}
 
-    .insert-indicator {
-        height: 3px;
-        background: #ffcc00;
-        margin: 2px 0;
-        border-radius: 2px;
-        transition: 0.05s linear;
-        box-shadow: 0 0 4px #ffcc00;
-    }
+.op-buttons button {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: #333;
+    color: #fff;
+}
 
-    .operation-info {
-        flex: 1;
-        word-break: break-word;
-    }
+.op-buttons button:hover {
+    background: #ffcc00;
+    color: #000;
+}
 
-    .op-buttons {
-        display: flex;
-        gap: 6px;
-    }
+.chart-container {
+    margin-top: 24px;
+    background: #222;
+    border: 4px solid #444;
+    padding: 20px;
+}
 
-    .op-buttons button {
-        width: auto;
-        padding: 4px 8px;
-        font-size: 11px;
-        background: #333;
-        border: 1px solid #777;
-    }
+.chart-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
 
-    .op-buttons button.edit-op {
-        background: #2c5f8a;
-    }
+.bar-chart {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    height: 350px;
+    border-left: 2px solid #777;
+    border-bottom: 2px solid #777;
+    padding: 10px;
+    background: #111;
+}
 
-    .op-buttons button.del-op {
-        background: #8b3c2c;
-    }
+.bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    position: relative;
+    z-index: 10;
+}
 
-    .badge {
-        background: #000;
-        border: 2px solid #666;
-        padding: 2px 8px;
-        font-size: 11px;
-    }
+.bar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    transition: .2s;
+}
 
-    .info-sec {
-        font-size: 11px;
-        color: #ffcc00;
-        margin-top: 8px;
-        text-align: center;
-        background: #1f1f1f;
-        padding: 4px;
-        border-radius: 6px;
-    }
+.bar-label {
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: center;
+    color: #fff;
+}
 
-    .chart-container {
-        margin-top: 24px;
-        background: #1f1f1f;
-        border: 3px solid #444;
-        padding: 16px;
-    }
+.chart-reference-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 2px dashed;
+    z-index: 5;
+    transition: bottom 0.2s;
+}
 
-    .chart-title {
-        font-size: 16px;
-        margin-bottom: 12px;
-        text-align: center;
-    }
+.tt-line {
+    border-color: #00d4ff;
+}
 
-    .bar-chart {
-        display: flex;
-        align-items: flex-end;
-        gap: 12px;
-        height: 180px;
-        overflow-x: auto;
-        padding-bottom: 8px;
-    }
+.tct-line {
+    border-color: #ff3b30;
+}
 
-    .bar-wrapper {
-        flex: 1;
-        min-width: 50px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-    }
+.chart-line-label {
+    position: absolute;
+    right: 8px;
+    top: -12px;
+    background: #111;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 3px;
+}
 
-    .bar {
-        width: 100%;
-        background: #ffcc00;
-        transition: height 0.2s;
-        min-height: 4px;
-        border-radius: 4px 4px 0 0;
-    }
+.tt-line .chart-line-label { color: #00d4ff; border: 1px solid #00d4ff; }
+.tct-line .chart-line-label { color: #ff3b30; border: 1px solid #ff3b30; }
 
-    .bar-label {
-        font-size: 11px;
-        text-align: center;
-    }
+.insert-indicator {
+    height: 4px;
+    background: #ffcc00;
+    border-radius: 2px;
+    margin: 4px 0;
+    box-shadow: 0 0 6px #ffcc00;
+}
 
-    /* ========= ОФИЦИАЛЬНЫЙ МИНИМАЛИСТИЧНЫЙ СТИЛЬ ПЕЧАТИ ========= */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.metric-card {
+    background: #1b1b1b;
+    border: 2px solid #555;
+    padding: 14px;
+}
+
+.metric-title {
+    font-size: 12px;
+    color: #bbb;
+    margin-bottom: 6px;
+}
+
+.metric-value {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.warning {
+    border-color: #ff3b30 !important;
+}
+
+#cancelEditBtn {
+    background: #555;
+    color: white;
+    margin-top: 8px;
+}
+#cancelEditBtn:hover {
+    background: #777;
+}
+
+/* ========= ОФИЦИАЛЬНЫЙ МИНИМАЛИСТИЧНЫЙ СТИЛЬ ПЕЧАТИ ========= */
     @media print {
         /* Скрываем все элементы интерфейса */
         .toolbar, .panel, .chart-container, .op-buttons, 
@@ -445,403 +456,502 @@
     }
 </style>
 </head>
+
 <body>
 
 <h1>
-     YAMAZUMI BOARD (секунды)
+    YAMAZUMI BOARD LEAN EDITION
     <div class="toolbar">
-        <button onclick="exportToExcel()"> EXCEL</button>
-        <button onclick="printReport()"> ПЕЧАТЬ</button>
-        <button onclick="resetAllData()"> СБРОС</button>
+        <button onclick="exportToExcel()">EXCEL</button>
+        <button onclick="printReport()">ПЕЧАТЬ</button>
+        <button onclick="resetAllData()">СБРОС</button>
     </div>
 </h1>
 
 <div class="layout">
-    <div class="panel">
-        <h2>Добавить / редактировать</h2>
-        <div class="field">
-            <label> Название операции</label>
-            <input type="text" id="operationName" placeholder="Например: Сварка">
+    <div>
+        <div class="panel">
+            <h2 id="formTitle">Операции</h2>
+
+            <div class="field">
+                <label>Название операции</label>
+                <input type="text" id="operationName">
+            </div>
+
+            <div class="field">
+                <label>Время операции (сек)</label>
+                <input type="number" id="operationTime">
+            </div>
+
+            <div class="field">
+                <label>Пост</label>
+                <select id="postSelect"></select>
+            </div>
+
+            <div class="field">
+                <label>Лимит поста (сек)</label>
+                <input type="number" id="maxTime" value="28800">
+            </div>
+
+            <button id="submitOpBtn" onclick="handleSubmitOperation()">ДОБАВИТЬ</button>
+            <button id="cancelEditBtn" onclick="cancelEditing()" style="display:none;">ОТМЕНА</button>
         </div>
-        <div class="field">
-            <label> Время (секунды)</label>
-            <input type="number" id="operationTime" placeholder="45" step="1" min="1">
+
+        <div class="panel">
+            <h2>Lean Metrics</h2>
+            <div class="field">
+                <label>Production Time (мин)</label>
+                <input type="number" id="productionTime" value="450">
+            </div>
+            <div class="field">
+                <label>Daily Orders</label>
+                <input type="number" id="dailyOrders" value="24">
+            </div>
+            <div class="field">
+                <label>OPR (%)</label>
+                <input type="number" id="opr" value="95">
+            </div>
         </div>
-        <div class="field">
-            <label> Пост</label>
-            <select id="postSelect"></select>
-        </div>
-        <div class="field">
-            <label> Лимит поста 100% (сек)</label>
-            <input type="number" id="maxTime" value="28800">
-            <div class="info-sec">⚡ 28800 сек = 8ч</div>
-        </div>
-        <button onclick="addOrUpdateOperation()"> ДОБАВИТЬ / СОХРАНИТЬ</button>
-        <div class="info-sec" style="margin-top: 12px;">💡 Редактирование: нажмите ✏️ у операции</div>
-        <div class="info-sec">🖱️ Drag&Drop: перетащите операцию МЕЖДУ постами при необходимости</div>
     </div>
 
-    <div class="posts-grid" id="postsGrid"></div>
-</div>
+    <div>
+        <div class="posts-grid" id="postsGrid"></div>
 
-<div class="chart-container" id="chartContainer">
-    <div class="chart-title"> Загрузка постов (%)</div>
-    <div class="bar-chart" id="barChart"></div>
-</div>
+        <div class="chart-container">
+            <div class="chart-title">Yamazumi Chart</div>
+            <div class="bar-chart" id="barChart"></div>
+        </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+        <div class="panel">
+            <h2>Lean KPI</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">TT</div>
+                    <div class="metric-value" id="ttValue"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">TCT</div>
+                    <div class="metric-value" id="tctValue"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">ΣWACT</div>
+                    <div class="metric-value" id="wactValue"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">HCI</div>
+                    <div class="metric-value" id="hciValue"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Operators</div>
+                    <div class="metric-value" id="hcReal"></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">LBE</div>
+                    <div class="metric-value" id="lbeValue"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
-    // ------------------- ГЛОБАЛЬНОЕ СОСТОЯНИЕ ------------------
-    let posts = [];
-    const POSTS_COUNT = 10;
-    let editingContext = null;
-    let dragSource = null;
-    let activeInsertPostId = null;
-    let activeInsertIndex = -1;
+const POSTS_COUNT = 10;
+let posts = [];
 
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem("yamazumi_seconds_data");
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed.posts && parsed.maxTime) {
-                    posts = parsed.posts;
-                    document.getElementById("maxTime").value = parsed.maxTime;
-                    return true;
+let dragSource = null;
+let activeInsertPostId = null;
+let activeInsertIndex = -1;
+
+// Контекст редактирования
+let editMode = false;
+let editingPostId = null;
+let editingOpIndex = null;
+
+function initPosts(){
+    posts = [];
+    for(let i = 1; i <= POSTS_COUNT; i++){
+        posts.push({
+            id: i,
+            operations: [],
+            totalTime: 0
+        });
+    }
+}
+
+function initSelect(){
+    const select = document.getElementById("postSelect");
+    select.innerHTML = "";
+    for(let i = 1; i <= POSTS_COUNT; i++){
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `Пост ${i}`;
+        select.appendChild(opt);
+    }
+}
+
+function handleSubmitOperation() {
+    const name = document.getElementById("operationName").value.trim();
+    const time = Number(document.getElementById("operationTime").value);
+    const postId = Number(document.getElementById("postSelect").value);
+
+    if(!name || !time) return;
+
+    if (editMode) {
+        // Режим редактирования существующей операции
+        const oldPost = posts.find(p => p.id === editingPostId);
+        if(oldPost && oldPost.operations[editingOpIndex]) {
+            // Удаляем старую из прежнего поста
+            const [movedOp] = oldPost.operations.splice(editingOpIndex, 1);
+            movedOp.name = name;
+            movedOp.time = time;
+            
+            // Добавляем в выбранный (возможно новый) пост
+            const targetPost = posts.find(p => p.id === postId);
+            targetPost.operations.push(movedOp);
+        }
+        cancelEditing();
+    } else {
+        // Режим обычного добавления новой операции
+        const post = posts.find(p => p.id === postId);
+        post.operations.push({ name, time });
+    }
+
+    recalcTotals();
+    renderAll();
+}
+
+function startEditOperation(postId, index) {
+    const post = posts.find(p => p.id === postId);
+    const op = post.operations[index];
+    if(!op) return;
+
+    editMode = true;
+    editingPostId = postId;
+    editingOpIndex = index;
+
+    document.getElementById("formTitle").innerText = "Редактировать операцию";
+    document.getElementById("operationName").value = op.name;
+    document.getElementById("operationTime").value = op.time;
+    document.getElementById("postSelect").value = postId;
+    document.getElementById("submitOpBtn").innerText = "СОХРАНИТЬ";
+    document.getElementById("cancelEditBtn").style.display = "inline-block";
+    
+    document.getElementById("operationName").focus();
+}
+
+function cancelEditing() {
+    editMode = false;
+    editingPostId = null;
+    editingOpIndex = null;
+
+    document.getElementById("formTitle").innerText = "Операции";
+    document.getElementById("operationName").value = "";
+    document.getElementById("operationTime").value = "";
+    document.getElementById("submitOpBtn").innerText = "ДОБАВИТЬ";
+    document.getElementById("cancelEditBtn").style.display = "none";
+}
+
+function removeOperation(postId, index, event){
+    if(event) event.stopPropagation();
+    
+    const post = posts.find(p => p.id === postId);
+    post.operations.splice(index, 1);
+
+    if(editMode && editingPostId === postId && editingOpIndex === index) {
+        cancelEditing();
+    }
+
+    recalcTotals();
+    renderAll();
+}
+
+function recalcTotals(){
+    posts.forEach(post => {
+        post.totalTime = post.operations.reduce((s, o) => s + o.time, 0);
+    });
+}
+
+function formatTime(seconds){
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}м ${sec}с`;
+}
+
+function getBarColor(percent){
+    if(percent < 90) return "#27c93f";
+    if(percent < 100) return "#ffcc00";
+    return "#ff3b30";
+}
+
+function getTT(){
+    const productionTime = Number(document.getElementById("productionTime").value);
+    const dailyOrders = Number(document.getElementById("dailyOrders").value);
+    if(!dailyOrders) return 0;
+    return (productionTime * 60) / dailyOrders; // Переводим в СЕКУНДЫ для синхронизации графиков
+}
+
+function getTCT(){
+    const TT = getTT();
+    const opr = Number(document.getElementById("opr").value);
+    return TT * (opr / 100);
+}
+
+function moveOperationTo(sourcePostId, sourceOpIndex, targetPostId, targetInsertIndex){
+    const sourcePost = posts.find(p => p.id === sourcePostId);
+    const targetPost = posts.find(p => p.id === targetPostId);
+    const [movedOperation] = sourcePost.operations.splice(sourceOpIndex, 1);
+
+    if(sourcePostId === targetPostId && sourceOpIndex < targetInsertIndex){
+        targetInsertIndex--;
+    }
+
+    targetPost.operations.splice(targetInsertIndex, 0, movedOperation);
+    recalcTotals();
+}
+
+function clearInsertIndicators(){
+    document.querySelectorAll(".insert-indicator").forEach(el => el.remove());
+}
+
+function renderPosts(){
+    const grid = document.getElementById("postsGrid");
+    grid.innerHTML = "";
+
+    const maxTime = Number(document.getElementById("maxTime").value);
+    const TCT = getTCT(); // Время TCT в секундах
+
+    posts.forEach(post => {
+        const percent = maxTime ? Math.round((post.totalTime / maxTime) * 100) : 0;
+        const overloaded = post.totalTime > TCT;
+
+        const card = document.createElement("div");
+        card.className = "post-card";
+        if(overloaded) { card.classList.add("warning"); }
+
+        card.innerHTML = `
+            <div class="post-title">
+                <span>ПОСТ ${post.id}</span>
+                <span>${formatTime(post.totalTime)}</span>
+            </div>
+            <div class="progress-wrapper">
+                <div class="progress-bar" style="width:${Math.min(percent, 100)}%; background:${getBarColor(percent)};"></div>
+                <div class="progress-text">${percent}%</div>
+            </div>
+            <div class="operations" id="ops-list-${post.id}">
+                ${post.operations.map((op, index) => `
+                    <div class="operation-item" draggable="true" data-post-id="${post.id}" data-op-index="${index}">
+                        <div class="op-info" onclick="startEditOperation(${post.id}, ${index})">
+                            <strong>${escapeHtml(op.name)}</strong><br>
+                            <small>${op.time} сек</small>
+                        </div>
+                        <div class="op-buttons">
+                            <button onclick="startEditOperation(${post.id}, ${index})">✏️</button>
+                            <button onclick="removeOperation(${post.id}, ${index}, event)">🗑</button>
+                        </div>
+                    </div>
+                `).join("")}
+            </div>
+        `;
+
+        grid.appendChild(card);
+
+        const operations = card.querySelectorAll(".operation-item");
+        operations.forEach(el => {
+            el.addEventListener("dragstart", (e) => {
+                dragSource = {
+                    postId: Number(el.dataset.postId),
+                    opIndex: Number(el.dataset.opIndex)
+                };
+                el.style.opacity = ".5";
+            });
+
+            el.addEventListener("dragend", () => {
+                dragSource = null;
+                el.style.opacity = "";
+                clearInsertIndicators();
+            });
+
+            el.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const rect = el.getBoundingClientRect();
+                const middle = rect.top + rect.height / 2;
+                const mouseY = e.clientY;
+                const targetPostId = Number(el.dataset.postId);
+                const targetIndex = Number(el.dataset.opIndex);
+
+                let insertIndex = mouseY > middle ? targetIndex + 1 : targetIndex;
+
+                clearInsertIndicators();
+
+                activeInsertPostId = targetPostId;
+                activeInsertIndex = insertIndex;
+
+                const indicator = document.createElement("div");
+                indicator.className = "insert-indicator";
+
+                const container = document.getElementById(`ops-list-${targetPostId}`);
+                const children = container.querySelectorAll(".operation-item");
+
+                if(insertIndex >= children.length){
+                    container.appendChild(indicator);
+                } else {
+                    container.insertBefore(indicator, children[insertIndex]);
                 }
-            } catch(e) { console.warn(e); }
-        }
-        posts = [];
-        for (let i = 1; i <= POSTS_COUNT; i++) {
-            posts.push({ id: i, operations: [], totalTime: 0 });
-        }
-        return false;
-    }
+            });
 
-    function saveToLocalStorage() {
-        const maxTime = getMaxTime();
-        localStorage.setItem("yamazumi_seconds_data", JSON.stringify({ posts, maxTime }));
-    }
+            el.addEventListener("drop", (e) => {
+                e.preventDefault();
+                if(!dragSource) return;
+                
+                // Если перемещаем редактируемую в данный момент операцию, сбрасываем форму
+                if(editMode && dragSource.postId === editingPostId && dragSource.opIndex === editingOpIndex) {
+                    cancelEditing();
+                }
 
-    function getMaxTime() {
+                moveOperationTo(
+                    dragSource.postId,
+                    dragSource.opIndex,
+                    activeInsertPostId,
+                    activeInsertIndex
+                );
+                renderAll();
+            });
+        });
+    });
+}
+
+function renderBarChart(){
+    const chart = document.getElementById("barChart");
+    chart.innerHTML = "";
+
+    const maxTime = Number(document.getElementById("maxTime").value) || 1;
+    const TT = getTT();
+    const TCT = getTCT();
+
+    // Для предотвращения выхода за границы графика, динамически масштабируем систему координат
+    const highestTimeValue = Math.max(maxTime, TT, TCT, ...posts.map(p => p.totalTime));
+
+    posts.forEach(post => {
+        const percentOfLimit = maxTime ? (post.totalTime / maxTime) * 100 : 0;
+        const currentHeightPercent = (post.totalTime / highestTimeValue) * 100;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "bar-wrapper";
+        wrapper.innerHTML = `
+            <div class="bar" style="height:${Math.max(currentHeightPercent, 2)}%; background:${getBarColor(percentOfLimit)};"></div>
+            <div class="bar-label">
+                П${post.id}<br>
+                ${post.totalTime}с
+            </div>
+        `;
+        chart.appendChild(wrapper);
+    });
+
+    renderReferenceLines(highestTimeValue);
+}
+
+function renderReferenceLines(highestTimeValue){
+    const chart = document.getElementById("barChart");
+    const TT = getTT();
+    const TCT = getTCT();
+
+    if(highestTimeValue <= 0) return;
+
+    const ttPercent = (TT / highestTimeValue) * 100;
+    const tctPercent = (TCT / highestTimeValue) * 100;
+
+    const ttLine = document.createElement("div");
+    ttLine.className = "chart-reference-line tt-line";
+    ttLine.style.bottom = `${ttPercent}%`;
+    ttLine.innerHTML = `<span class="chart-line-label">TT: ${Math.round(TT)}с</span>`;
+    chart.appendChild(ttLine);
+
+    const tctLine = document.createElement("div");
+    tctLine.className = "chart-reference-line tct-line";
+    tctLine.style.bottom = `${tctPercent}%`;
+    tctLine.innerHTML = `<span class="chart-line-label">TCT: ${Math.round(TCT)}с</span>`;
+    chart.appendChild(tctLine);
+}
+
+function renderLeanMetrics(){
+    const TT_sec = getTT();
+    const TCT_sec = getTCT();
+
+    // Переводим все KPI в минуты для соответствия классическому представлению в интерфейсе
+    const TT_min = TT_sec / 60;
+    const TCT_min = TCT_sec / 60;
+
+    const totalWact_min = posts.reduce((s, p) => s + (p.totalTime / 60), 0);
+    const HCI = TCT_min > 0 ? (totalWact_min / TCT_min) : 0;
+    const HCReal = Math.ceil(HCI) || 1;
+    const LBE = (HCI / HCReal) * 100;
+
+    document.getElementById("ttValue").innerText = `${TT_min.toFixed(2)} мин`;
+    document.getElementById("tctValue").innerText = `${TCT_min.toFixed(2)} мин`;
+    document.getElementById("wactValue").innerText = `${totalWact_min.toFixed(2)} мин`;
+    document.getElementById("hciValue").innerText = HCI.toFixed(2);
+    document.getElementById("hcReal").innerText = HCReal;
+    document.getElementById("lbeValue").innerText = `${LBE.toFixed(0)}%`;
+}
+
+function exportToExcel(){
+    const rows = [];
+    posts.forEach(post => {
+        post.operations.forEach(op => {
+            rows.push({
+                "Пост": post.id,
+                "Операция": op.name,
+                "Время сек": op.time
+            });
+        });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Yamazumi");
+    XLSX.writeFile(wb, "yamazumi.xlsx");
+}
+
+function resetAllData(){
+    if(!confirm("Удалить все операции?")) return;
+    cancelEditing();
+    initPosts();
+    renderAll();
+}
+
+function renderAll(){
+    renderPosts();
+    renderBarChart();
+    renderLeanMetrics();
+}
+
+document.getElementById("productionTime").addEventListener("input", renderAll);
+document.getElementById("dailyOrders").addEventListener("input", renderAll);
+document.getElementById("opr").addEventListener("input", renderAll);
+document.getElementById("maxTime").addEventListener("input", renderAll);
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m));
+}
+
+initPosts();
+initSelect();
+renderAll();
+
+
+
+
+function getMaxTime() {
         let val = Number(document.getElementById("maxTime").value);
         return (isNaN(val) || val <= 0) ? 28800 : val;
     }
 
-    function formatTime(secondsTotal) {
-        if (secondsTotal === 0) return "0 сек";
-        const hrs = Math.floor(secondsTotal / 3600);
-        const mins = Math.floor((secondsTotal % 3600) / 60);
-        const secs = secondsTotal % 60;
-        if (hrs > 0) return `${hrs}ч ${mins}мин ${secs}сек`;
-        if (mins > 0) return `${mins}мин ${secs}сек`;
-        return `${secs}сек`;
-    }
 
-    function getBarColor(percent) {
-        if (percent < 90) return "#27c93f";
-        if (percent < 100) return "#ffcc00";
-        return "#ff3b30";
-    }
 
-    function recalcPostTotal(post) {
-        post.totalTime = post.operations.reduce((sum, op) => sum + op.time, 0);
-    }
-
-    function refreshAllTotals() {
-        posts.forEach(p => recalcPostTotal(p));
-    }
-
-    function moveOperationTo(sourcePostId, sourceOpIndex, targetPostId, targetInsertIndex) {
-        const sourcePost = posts.find(p => p.id === sourcePostId);
-        const targetPost = posts.find(p => p.id === targetPostId);
-        if (!sourcePost || !targetPost) return false;
-        if (sourceOpIndex < 0 || sourceOpIndex >= sourcePost.operations.length) return false;
-        const [movedOp] = sourcePost.operations.splice(sourceOpIndex, 1);
-        recalcPostTotal(sourcePost);
-        if (targetInsertIndex < 0 || targetInsertIndex > targetPost.operations.length) targetPost.operations.push(movedOp);
-        else targetPost.operations.splice(targetInsertIndex, 0, movedOp);
-        recalcPostTotal(targetPost);
-        return true;
-    }
-
-    function clearInsertIndicators() {
-        document.querySelectorAll('.insert-indicator').forEach(el => el.remove());
-        document.querySelectorAll('.post-card').forEach(card => card.classList.remove('drag-over'));
-        activeInsertPostId = null;
-        activeInsertIndex = -1;
-    }
-
-    function renderAll() {
-        renderPosts();
-        renderBarChart();
-        saveToLocalStorage();
-        clearInsertIndicators();
-        dragSource = null;
-    }
-
-    function renderPosts() {
-        const container = document.getElementById("postsGrid");
-        container.innerHTML = "";
-        const maxTime = getMaxTime();
-
-        posts.forEach(post => {
-            let percent = maxTime > 0 ? Math.min(100, Math.round((post.totalTime / maxTime) * 100)) : 0;
-            const formattedTotal = formatTime(post.totalTime);
-            const card = document.createElement("div");
-            card.className = "post-card";
-            card.setAttribute("data-post-id", post.id);
-
-            card.addEventListener("dragover", (e) => {
-                e.preventDefault();
-                card.classList.add("drag-over");
-            });
-            card.addEventListener("dragleave", (e) => {
-                if (!card.contains(e.relatedTarget)) card.classList.remove("drag-over");
-            });
-            card.addEventListener("drop", (e) => {
-                e.preventDefault();
-                card.classList.remove("drag-over");
-                if (!dragSource) return;
-                const targetPostId = post.id;
-                if (dragSource.postId === targetPostId) return;
-                const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, posts.find(p => p.id === targetPostId).operations.length);
-                if (success) { refreshAllTotals(); renderAll(); }
-                dragSource = null;
-                clearInsertIndicators();
-            });
-
-            let operationsHtml = "";
-            if (post.operations.length === 0) {
-                operationsHtml = "<div style='padding: 6px; color:#888;'>Перетащите сюда или добавьте</div>";
-            } else {
-                operationsHtml = post.operations.map((op, idx) => `
-                    <div class="operation-item" draggable="true" data-op-index="${idx}" data-post-id="${post.id}" data-op-name="${escapeHtml(op.name)}">
-                        <div class="operation-info">
-                            ${escapeHtml(op.name)} — ${op.time} сек (${formatTime(op.time)})
-                        </div>
-                        <div class="op-buttons">
-                            <button class="edit-op" data-post="${post.id}" data-idx="${idx}" title="Изменить">✏️</button>
-                            <button class="del-op" data-post="${post.id}" data-idx="${idx}" title="Удалить">🗑️</button>
-                        </div>
-                    </div>
-                `).join("");
-            }
-
-            card.innerHTML = `
-                <div class="post-title">
-                    <span>ПОСТ ${post.id}</span>
-                    <span class="badge">${formattedTotal}</span>
-                </div>
-                <div class="progress-wrapper">
-                    <div class="progress-bar" style="width:${percent}%; background:${getBarColor(percent)};"></div>
-                    <div class="progress-text">${percent}% (${post.totalTime}/${maxTime} сек)</div>
-                </div>
-                <div class="operations" id="ops-list-${post.id}">${operationsHtml}</div>
-            `;
-            container.appendChild(card);
-
-            // Drag & drop логика для операций (вклинивание)
-            const opItems = card.querySelectorAll(".operation-item[draggable='true']");
-            opItems.forEach(el => {
-                el.addEventListener("dragstart", (e) => {
-                    const opIdx = parseInt(el.getAttribute("data-op-index"));
-                    const pId = parseInt(el.getAttribute("data-post-id"));
-                    dragSource = { postId: pId, opIndex: opIdx };
-                    e.dataTransfer.setData("text/plain", JSON.stringify({ sourcePostId: pId, opIndex: opIdx }));
-                    e.dataTransfer.effectAllowed = "move";
-                    e.target.style.opacity = "0.6";
-                });
-                el.addEventListener("dragend", (e) => {
-                    e.target.style.opacity = "";
-                    clearInsertIndicators();
-                    dragSource = null;
-                });
-                el.addEventListener("dragover", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!dragSource) return;
-                    const targetPostId = parseInt(el.getAttribute("data-post-id"));
-                    const targetOpIndex = parseInt(el.getAttribute("data-op-index"));
-                    const rect = el.getBoundingClientRect();
-                    const mouseY = e.clientY;
-                    const middle = rect.top + rect.height / 2;
-                    let insertIndex = (mouseY > middle) ? targetOpIndex + 1 : targetOpIndex;
-                    if (activeInsertPostId !== targetPostId || activeInsertIndex !== insertIndex) {
-                        clearInsertIndicators();
-                        activeInsertPostId = targetPostId;
-                        activeInsertIndex = insertIndex;
-                        const opsDiv = card.querySelector('.operations');
-                        if (opsDiv) {
-                            const children = Array.from(opsDiv.querySelectorAll('.operation-item'));
-                            const indicator = document.createElement('div');
-                            indicator.className = 'insert-indicator';
-                            if (insertIndex === 0) opsDiv.insertBefore(indicator, children[0] || null);
-                            else if (insertIndex >= children.length) opsDiv.appendChild(indicator);
-                            else opsDiv.insertBefore(indicator, children[insertIndex]);
-                        }
-                    }
-                });
-                el.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!dragSource) return;
-                    const targetPostId = parseInt(el.getAttribute("data-post-id"));
-                    const targetOpIndex = parseInt(el.getAttribute("data-op-index"));
-                    const rect = el.getBoundingClientRect();
-                    const mouseY = e.clientY;
-                    const middle = rect.top + rect.height / 2;
-                    let insertIndex = (mouseY > middle) ? targetOpIndex + 1 : targetOpIndex;
-                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, targetPostId, insertIndex);
-                    if (success) { refreshAllTotals(); renderAll(); }
-                    clearInsertIndicators();
-                    dragSource = null;
-                });
-            });
-
-            // Обработка дропа на пустую область операций
-            const opsDiv = card.querySelector('.operations');
-            if (opsDiv) {
-                opsDiv.addEventListener("dragover", (e) => {
-                    e.preventDefault();
-                    if (!dragSource) return;
-                    if (post.operations.length === 0) {
-                        if (activeInsertPostId !== post.id || activeInsertIndex !== 0) {
-                            clearInsertIndicators();
-                            activeInsertPostId = post.id;
-                            activeInsertIndex = 0;
-                            const indicator = document.createElement('div');
-                            indicator.className = 'insert-indicator';
-                            opsDiv.appendChild(indicator);
-                        }
-                    } else {
-                        const lastOp = opsDiv.querySelector('.operation-item:last-child');
-                        if (lastOp) {
-                            const rectLast = lastOp.getBoundingClientRect();
-                            if (e.clientY > rectLast.bottom) {
-                                if (activeInsertPostId !== post.id || activeInsertIndex !== post.operations.length) {
-                                    clearInsertIndicators();
-                                    activeInsertPostId = post.id;
-                                    activeInsertIndex = post.operations.length;
-                                    const indicator = document.createElement('div');
-                                    indicator.className = 'insert-indicator';
-                                    opsDiv.appendChild(indicator);
-                                }
-                            }
-                        }
-                    }
-                });
-                opsDiv.addEventListener("drop", (e) => {
-                    e.preventDefault();
-                    if (!dragSource) return;
-                    let insertIndex = (activeInsertPostId === post.id && activeInsertIndex !== -1) ? activeInsertIndex : post.operations.length;
-                    const success = moveOperationTo(dragSource.postId, dragSource.opIndex, post.id, insertIndex);
-                    if (success) { refreshAllTotals(); renderAll(); }
-                    clearInsertIndicators();
-                    dragSource = null;
-                });
-            }
-
-            // Кнопки редактирования/удаления
-            card.querySelectorAll(".edit-op").forEach(btn => {
-                btn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    const postId = Number(btn.getAttribute("data-post"));
-                    const idx = Number(btn.getAttribute("data-idx"));
-                    const post = posts.find(p => p.id === postId);
-                    if (post && post.operations[idx]) {
-                        const op = post.operations[idx];
-                        document.getElementById("operationName").value = op.name;
-                        document.getElementById("operationTime").value = op.time;
-                        document.getElementById("postSelect").value = postId;
-                        editingContext = { postId, opIndex: idx };
-                        alert(`Редактирование: "${op.name}" → измените данные и нажмите кнопку.`);
-                    }
-                });
-            });
-            card.querySelectorAll(".del-op").forEach(btn => {
-                btn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    const postId = Number(btn.getAttribute("data-post"));
-                    const idx = Number(btn.getAttribute("data-idx"));
-                    const post = posts.find(p => p.id === postId);
-                    if (post && post.operations[idx] && confirm(`Удалить операцию "${post.operations[idx].name}"?`)) {
-                        post.operations.splice(idx, 1);
-                        recalcPostTotal(post);
-                        renderAll();
-                    }
-                });
-            });
-        });
-    }
-
-    function renderBarChart() {
-        const maxTime = getMaxTime();
-        const chartDiv = document.getElementById("barChart");
-        chartDiv.innerHTML = "";
-        posts.forEach(post => {
-            let percent = maxTime > 0 ? (post.totalTime / maxTime) * 100 : 0;
-            percent = Math.min(100, percent);
-            const wrapper = document.createElement("div");
-            wrapper.className = "bar-wrapper";
-            const bar = document.createElement("div");
-            bar.className = "bar";
-            bar.style.height = `${Math.max(4, percent)}px`;
-            bar.style.backgroundColor = getBarColor(percent);
-            const label = document.createElement("div");
-            label.className = "bar-label";
-            label.innerText = `П${post.id}\n${Math.round(percent)}%`;
-            wrapper.appendChild(bar);
-            wrapper.appendChild(label);
-            chartDiv.appendChild(wrapper);
-        });
-    }
-
-    function addOrUpdateOperation() {
-        let name = document.getElementById("operationName").value.trim();
-        let timeSec = Number(document.getElementById("operationTime").value);
-        let postId = Number(document.getElementById("postSelect").value);
-        if (!name) { alert("Введите название операции"); return; }
-        if (isNaN(timeSec) || timeSec <= 0) { alert("Введите корректное время (сек)"); return; }
-        timeSec = Math.floor(timeSec);
-        const targetPost = posts.find(p => p.id === postId);
-        if (!targetPost) return;
-        if (editingContext !== null) {
-            const oldPost = posts.find(p => p.id === editingContext.postId);
-            if (oldPost && oldPost.operations[editingContext.opIndex]) {
-                oldPost.operations.splice(editingContext.opIndex, 1);
-                recalcPostTotal(oldPost);
-                targetPost.operations.push({ name, time: timeSec });
-                recalcPostTotal(targetPost);
-                editingContext = null;
-                clearForm();
-                renderAll();
-                return;
-            }
-        }
-        targetPost.operations.push({ name, time: timeSec });
-        recalcPostTotal(targetPost);
-        clearForm();
-        renderAll();
-    }
-
-    function clearForm() {
-        document.getElementById("operationName").value = "";
-        document.getElementById("operationTime").value = "";
-        editingContext = null;
-    }
-
-    function resetAllData() {
-        if (confirm("❗ ВСЕ операции будут удалены. Продолжить?")) {
-            posts.forEach(p => { p.operations = []; p.totalTime = 0; });
-            editingContext = null;
-            clearForm();
-            renderAll();
-        }
-    }
-
-    // Официальная печать с минималистичным шаблоном
+// Официальная печать с минималистичным шаблоном
     function printReport() {
         const originalTitle = document.title;
         document.title = "Yamazumi Board";
@@ -901,51 +1011,9 @@
         document.title = originalTitle;
     }
 
-    function exportToExcel() {
-        const maxTime = getMaxTime();
-        const rows = [];
-        posts.forEach(post => {
-            const percent = maxTime > 0 ? Math.round((post.totalTime / maxTime) * 100) : 0;
-            const totalFmt = formatTime(post.totalTime);
-            const maxFmt = formatTime(maxTime);
-            if (post.operations.length === 0) {
-                rows.push({ "Пост": `Пост ${post.id}`, "Операция": "(нет операций)", "Время (сек)": 0, "Время (формат)": "0 сек", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
-            } else {
-                post.operations.forEach(op => {
-                    rows.push({ "Пост": `Пост ${post.id}`, "Операция": op.name, "Время (сек)": op.time, "Время (формат)": formatTime(op.time), "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
-                });
-            }
-            rows.push({ "Пост": `--- ИТОГ ПОСТА ${post.id} ---`, "Операция": "", "Время (сек)": "", "Время (формат)": "", "Суммарно (сек)": post.totalTime, "Суммарно (формат)": totalFmt, "Лимит (сек)": maxTime, "Лимит (формат)": maxFmt, "Загрузка %": `${percent}%` });
-        });
-        const totalAll = posts.reduce((s,p) => s + p.totalTime, 0);
-        rows.push({ "Пост": "ОБЩАЯ СВОДКА", "Операция": "Сумма всех постов", "Время (сек)": totalAll, "Время (формат)": formatTime(totalAll), "Суммарно (сек)": "", "Суммарно (формат)": "", "Лимит (сек)": "", "Лимит (формат)": "", "Загрузка %": "" });
-        const ws = XLSX.utils.json_to_sheet(rows);
-        ws["!cols"] = [{wch:14},{wch:30},{wch:14},{wch:22},{wch:16},{wch:20},{wch:14},{wch:20},{wch:12}];
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Yamazumi");
-        XLSX.writeFile(wb, `Yamazumi_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
-    }
 
-    function escapeHtml(str) {
-        if (!str) return "";
-        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m));
-    }
 
-    function initPostSelect() {
-        const select = document.getElementById("postSelect");
-        select.innerHTML = "";
-        for (let i = 1; i <= POSTS_COUNT; i++) {
-            select.appendChild(new Option(`Пост ${i}`, i));
-        }
-    }
-
-    document.getElementById("maxTime").addEventListener("input", () => renderAll());
-    window.addEventListener("load", () => {
-        initPostSelect();
-        loadFromLocalStorage();
-        refreshAllTotals();
-        renderAll();
-    });
 </script>
+
 </body>
 </html>
