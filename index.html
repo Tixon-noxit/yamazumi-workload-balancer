@@ -306,154 +306,53 @@ input, select {
     background: #777;
 }
 
-/* ========= ОФИЦИАЛЬНЫЙ МИНИМАЛИСТИЧНЫЙ СТИЛЬ ПЕЧАТИ ========= */
-    @media print {
-        /* Скрываем все элементы интерфейса */
-        .toolbar, .panel, .chart-container, .op-buttons, 
-        .insert-indicator, .progress-wrapper, .info-sec,
-        button, .post-card .progress-wrapper {
-            display: none !important;
-        }
-
-        body {
-            background: white;
-            padding: 0;
-            margin: 0;
-            color: black;
-        }
-
-        h1 {
-            color: black;
-            border-left: 4px solid #000;
-            padding-left: 12px;
-            font-size: 22px;
-            margin-bottom: 20px;
-            margin-top: 0;
-        }
-
-        h1::after {
-            content: " • Отчет";
-            font-size: 14px;
-            font-weight: normal;
-            color: #444;
-        }
-
-        .layout {
-            display: block;
-            margin-top: 0;
-        }
-
-        .posts-grid {
-            display: block;
-            gap: 0;
-        }
-
-        .post-card {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 12px;
-            margin-bottom: 20px;
-            break-inside: avoid;
-            page-break-inside: avoid;
-            box-shadow: none;
-        }
-
-        .post-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
-            border-bottom: 2px solid #000;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
-        }
-
-        .badge {
-            border: 1px solid #aaa;
-            background: #f5f5f5;
-            color: #000;
-        }
-
-        .operations {
-            border-top: 1px solid #ddd;
-            padding-top: 8px;
-            margin-top: 8px;
-            max-height: none;
-            overflow: visible;
-        }
-
-        .operation-item {
-            background: #fafafa;
-            border-left: 3px solid #333;
-            margin-bottom: 6px;
-            padding: 8px 6px;
-            cursor: default;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-
-        .operation-info {
-            color: #000;
-            font-size: 11pt;
-        }
-
-        /* Таблица сводки — минималистичный официальный стиль */
-        .print-summary {
-            display: block;
-            margin-top: 30px;
-            border-top: 2px solid #000;
-            padding-top: 15px;
-        }
-
-        .print-summary h3 {
-            font-size: 16px;
-            margin: 0 0 10px 0;
-            font-weight: bold;
-        }
-
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11pt;
-        }
-
-        .summary-table th, .summary-table td {
-            border: 1px solid #aaa;
-            padding: 8px 6px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        .summary-table th {
-            background: #f0f0f0;
-            font-weight: bold;
-        }
-
-        .signatures {
-            margin-top: 35px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 10pt;
-            border-top: 1px dashed #aaa;
-            padding-top: 20px;
-        }
-
-        .sign-line {
-            width: 45%;
-        }
-
-        .sign-line p {
-            margin: 5px 0;
-        }
-
-        .footer-note {
-            margin-top: 20px;
-            font-size: 8pt;
-            text-align: center;
-            color: #555;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-        }
+/* ========= ОБНОВЛЕННЫЙ СТИЛЬ ДЛЯ ПЕЧАТИ (ТОЛЬКО ДИАГРАММА) ========= */
+@media print {
+    body * {
+        visibility: hidden;
     }
+    
+    .chart-container, .chart-container * {
+        visibility: visible;
+    }
+
+    body {
+        background: white !important;
+        color: black !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    .chart-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: transparent !important;
+        border: none !important;
+        padding: 0;
+        margin: 0;
+    }
+
+    .bar-chart {
+        background: #f5f5f5 !important;
+        border-left: 2px solid #000 !important;
+        border-bottom: 2px solid #000 !important;
+    }
+
+    .bar-label {
+        color: #000 !important;
+    }
+
+    .chart-title {
+        color: #000 !important;
+        font-size: 20px;
+    }
+
+    .print-summary {
+        display: none !important;
+    }
+}
 </style>
 </head>
 
@@ -500,15 +399,15 @@ input, select {
         <div class="panel">
             <h2>Lean Metrics</h2>
             <div class="field">
-                <label>Production Time (мин)</label>
+                <label>Производственное время (мин)</label>
                 <input type="number" id="productionTime" value="450">
             </div>
             <div class="field">
-                <label>Daily Orders</label>
+                <label>Ежедневные заказы</label>
                 <input type="number" id="dailyOrders" value="24">
             </div>
             <div class="field">
-                <label>OPR (%)</label>
+                <label>OPR (%) коэффициент эффективности производства</label>
                 <input type="number" id="opr" value="95">
             </div>
         </div>
@@ -526,27 +425,27 @@ input, select {
             <h2>Lean KPI</h2>
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-title">TT</div>
+                    <div class="metric-title">TT (Время такта)</div>
                     <div class="metric-value" id="ttValue"></div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">TCT</div>
+                    <div class="metric-title">TCT (Целевое время цикла)</div>
                     <div class="metric-value" id="tctValue"></div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">ΣWACT</div>
+                    <div class="metric-title">WACT (Средневзвешенное время цикла)</div>
                     <div class="metric-value" id="wactValue"></div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">HCI</div>
+                    <div class="metric-title">HCI (Идеальное количество процессов)</div>
                     <div class="metric-value" id="hciValue"></div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">Operators</div>
+                    <div class="metric-title">Операторы</div>
                     <div class="metric-value" id="hcReal"></div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-title">LBE</div>
+                    <div class="metric-title">LBE (Баланс эффективности)</div>
                     <div class="metric-value" id="lbeValue"></div>
                 </div>
             </div>
@@ -562,10 +461,39 @@ let dragSource = null;
 let activeInsertPostId = null;
 let activeInsertIndex = -1;
 
-// Контекст редактирования
 let editMode = false;
 let editingPostId = null;
 let editingOpIndex = null;
+
+function saveToLocalStorage() {
+    localStorage.setItem("yamazumi_posts", JSON.stringify(posts));
+    localStorage.setItem("yamazumi_maxTime", document.getElementById("maxTime").value);
+    localStorage.setItem("yamazumi_productionTime", document.getElementById("productionTime").value);
+    localStorage.setItem("yamazumi_dailyOrders", document.getElementById("dailyOrders").value);
+    localStorage.setItem("yamazumi_opr", document.getElementById("opr").value);
+}
+
+function loadFromLocalStorage() {
+    const savedPosts = localStorage.getItem("yamazumi_posts");
+    if (savedPosts) {
+        posts = JSON.parse(savedPosts);
+    } else {
+        initPosts();
+    }
+
+    if (localStorage.getItem("yamazumi_maxTime") !== null) {
+        document.getElementById("maxTime").value = localStorage.getItem("yamazumi_maxTime");
+    }
+    if (localStorage.getItem("yamazumi_productionTime") !== null) {
+        document.getElementById("productionTime").value = localStorage.getItem("yamazumi_productionTime");
+    }
+    if (localStorage.getItem("yamazumi_dailyOrders") !== null) {
+        document.getElementById("dailyOrders").value = localStorage.getItem("yamazumi_dailyOrders");
+    }
+    if (localStorage.getItem("yamazumi_opr") !== null) {
+        document.getElementById("opr").value = localStorage.getItem("yamazumi_opr");
+    }
+}
 
 function initPosts(){
     posts = [];
@@ -597,21 +525,17 @@ function handleSubmitOperation() {
     if(!name || !time) return;
 
     if (editMode) {
-        // Режим редактирования существующей операции
         const oldPost = posts.find(p => p.id === editingPostId);
         if(oldPost && oldPost.operations[editingOpIndex]) {
-            // Удаляем старую из прежнего поста
             const [movedOp] = oldPost.operations.splice(editingOpIndex, 1);
             movedOp.name = name;
             movedOp.time = time;
             
-            // Добавляем в выбранный (возможно новый) пост
             const targetPost = posts.find(p => p.id === postId);
             targetPost.operations.push(movedOp);
         }
         cancelEditing();
     } else {
-        // Режим обычного добавления новой операции
         const post = posts.find(p => p.id === postId);
         post.operations.push({ name, time });
     }
@@ -687,7 +611,7 @@ function getTT(){
     const productionTime = Number(document.getElementById("productionTime").value);
     const dailyOrders = Number(document.getElementById("dailyOrders").value);
     if(!dailyOrders) return 0;
-    return (productionTime * 60) / dailyOrders; // Переводим в СЕКУНДЫ для синхронизации графиков
+    return (productionTime * 60) / dailyOrders;
 }
 
 function getTCT(){
@@ -699,18 +623,25 @@ function getTCT(){
 function moveOperationTo(sourcePostId, sourceOpIndex, targetPostId, targetInsertIndex){
     const sourcePost = posts.find(p => p.id === sourcePostId);
     const targetPost = posts.find(p => p.id === targetPostId);
+    if (!sourcePost || !targetPost) return;
+
     const [movedOperation] = sourcePost.operations.splice(sourceOpIndex, 1);
 
     if(sourcePostId === targetPostId && sourceOpIndex < targetInsertIndex){
         targetInsertIndex--;
     }
 
-    targetPost.operations.splice(targetInsertIndex, 0, movedOperation);
+    if (targetInsertIndex < 0 || targetInsertIndex > targetPost.operations.length) {
+        targetPost.operations.push(movedOperation);
+    } else {
+        targetPost.operations.splice(targetInsertIndex, 0, movedOperation);
+    }
     recalcTotals();
 }
 
-function clearInsertIndicators(){
+function clearInsertIndicators() {
     document.querySelectorAll(".insert-indicator").forEach(el => el.remove());
+    document.querySelectorAll(".post-card").forEach(el => el.classList.remove("drag-over"));
 }
 
 function renderPosts(){
@@ -718,7 +649,7 @@ function renderPosts(){
     grid.innerHTML = "";
 
     const maxTime = Number(document.getElementById("maxTime").value);
-    const TCT = getTCT(); // Время TCT в секундах
+    const TCT = getTCT();
 
     posts.forEach(post => {
         const percent = maxTime ? Math.round((post.totalTime / maxTime) * 100) : 0;
@@ -726,6 +657,7 @@ function renderPosts(){
 
         const card = document.createElement("div");
         card.className = "post-card";
+        card.dataset.postId = post.id;
         if(overloaded) { card.classList.add("warning"); }
 
         card.innerHTML = `
@@ -755,6 +687,52 @@ function renderPosts(){
 
         grid.appendChild(card);
 
+        // Навешиваем Drag & Drop события на саму КАРТОЧКУ поста (чтобы можно было бросать в пустые посты)
+        card.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            card.classList.add("drag-over");
+            
+            // Если мы зависли над пустой зоной карточки, сбрасываем в конец списка этого поста
+            if (e.target.classList.contains("operations") || e.target.closest(".post-card") === card) {
+                const container = document.getElementById(`ops-list-${post.id}`);
+                if (container && !container.querySelector(".insert-indicator")) {
+                    clearInsertIndicators();
+                    card.classList.add("drag-over");
+                    activeInsertPostId = post.id;
+                    activeInsertIndex = post.operations.length;
+                    
+                    const indicator = document.createElement("div");
+                    indicator.className = "insert-indicator";
+                    container.appendChild(indicator);
+                }
+            }
+        });
+
+        card.addEventListener("dragleave", (e) => {
+            const related = e.relatedTarget;
+            if (!card.contains(related)) {
+                card.classList.remove("drag-over");
+            }
+        });
+
+        card.addEventListener("drop", (e) => {
+            e.preventDefault();
+            if(!dragSource) return;
+
+            if(editMode && dragSource.postId === editingPostId && dragSource.opIndex === editingOpIndex) {
+                cancelEditing();
+            }
+
+            moveOperationTo(
+                dragSource.postId,
+                dragSource.opIndex,
+                activeInsertPostId,
+                activeInsertIndex
+            );
+            renderAll();
+        });
+
+        // Навешиваем события на сами ЭЛЕМЕНТЫ операций внутри карточки
         const operations = card.querySelectorAll(".operation-item");
         operations.forEach(el => {
             el.addEventListener("dragstart", (e) => {
@@ -763,6 +741,7 @@ function renderPosts(){
                     opIndex: Number(el.dataset.opIndex)
                 };
                 el.style.opacity = ".5";
+                e.dataTransfer.setData("text/plain", ""); // Фикс для корректного Drag в некоторых браузерах
             });
 
             el.addEventListener("dragend", () => {
@@ -784,6 +763,7 @@ function renderPosts(){
                 let insertIndex = mouseY > middle ? targetIndex + 1 : targetIndex;
 
                 clearInsertIndicators();
+                card.classList.add("drag-over");
 
                 activeInsertPostId = targetPostId;
                 activeInsertIndex = insertIndex;
@@ -800,24 +780,6 @@ function renderPosts(){
                     container.insertBefore(indicator, children[insertIndex]);
                 }
             });
-
-            el.addEventListener("drop", (e) => {
-                e.preventDefault();
-                if(!dragSource) return;
-                
-                // Если перемещаем редактируемую в данный момент операцию, сбрасываем форму
-                if(editMode && dragSource.postId === editingPostId && dragSource.opIndex === editingOpIndex) {
-                    cancelEditing();
-                }
-
-                moveOperationTo(
-                    dragSource.postId,
-                    dragSource.opIndex,
-                    activeInsertPostId,
-                    activeInsertIndex
-                );
-                renderAll();
-            });
         });
     });
 }
@@ -830,7 +792,6 @@ function renderBarChart(){
     const TT = getTT();
     const TCT = getTCT();
 
-    // Для предотвращения выхода за границы графика, динамически масштабируем систему координат
     const highestTimeValue = Math.max(maxTime, TT, TCT, ...posts.map(p => p.totalTime));
 
     posts.forEach(post => {
@@ -879,7 +840,6 @@ function renderLeanMetrics(){
     const TT_sec = getTT();
     const TCT_sec = getTCT();
 
-    // Переводим все KPI в минуты для соответствия классическому представлению в интерфейсе
     const TT_min = TT_sec / 60;
     const TCT_min = TCT_sec / 60;
 
@@ -918,6 +878,7 @@ function resetAllData(){
     if(!confirm("Удалить все операции?")) return;
     cancelEditing();
     initPosts();
+    localStorage.clear();
     renderAll();
 }
 
@@ -925,6 +886,7 @@ function renderAll(){
     renderPosts();
     renderBarChart();
     renderLeanMetrics();
+    saveToLocalStorage();
 }
 
 document.getElementById("productionTime").addEventListener("input", renderAll);
@@ -937,82 +899,22 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m));
 }
 
-initPosts();
+// ПРАВИЛЬНЫЙ ПОРЯДОК ИНИЦИАЛИЗАЦИИ
 initSelect();
+loadFromLocalStorage();
 renderAll();
 
-
-
-
 function getMaxTime() {
-        let val = Number(document.getElementById("maxTime").value);
-        return (isNaN(val) || val <= 0) ? 28800 : val;
-    }
+    let val = Number(document.getElementById("maxTime").value);
+    return (isNaN(val) || val <= 0) ? 28800 : val;
+}
 
-
-
-// Официальная печать с минималистичным шаблоном
-    function printReport() {
-        const originalTitle = document.title;
-        document.title = "Yamazumi Board";
-        
-        // Создаем контейнер для печатной сводки (будет добавлен временно)
-        const printContainer = document.createElement('div');
-        printContainer.className = 'print-summary';
-        const maxTime = getMaxTime();
-        const currentDate = new Date().toLocaleString('ru-RU');
-        
-        let summaryHTML = `<h3>Сводка по загрузке постов</h3>
-        <table class="summary-table">
-            <thead>
-                <tr><th>Пост</th><th>Суммарное время</th><th>Лимит (сек)</th><th>Загрузка (%)</th><th>Кол-во операций</th></tr>
-            </thead>
-            <tbody>`;
-        posts.forEach(post => {
-            const percent = maxTime > 0 ? Math.round((post.totalTime / maxTime) * 100) : 0;
-            summaryHTML += `<tr>
-                <td><strong>Пост ${post.id}</strong></td>
-                <td>${formatTime(post.totalTime)} (${post.totalTime} сек)</td>
-                <td>${formatTime(maxTime)} (${maxTime} сек)</td>
-                <td>${percent}%</td>
-                <td>${post.operations.length}</td>
-            </tr>`;
-        });
-        const totalAllTime = posts.reduce((sum, p) => sum + p.totalTime, 0);
-        const avgLoad = posts.length ? Math.round((totalAllTime / (posts.length * maxTime)) * 100) : 0;
-        summaryHTML += `<tr style="background:#f5f5f5;"><td><strong>ИТОГО / СРЕДНЕЕ</strong></td>
-            <td><strong>${formatTime(totalAllTime)}</strong></td>
-            <td>—</td>
-            <td><strong>${avgLoad}%</strong></td>
-            <td>${posts.reduce((sum,p) => sum + p.operations.length, 0)}</td>
-        </tr>`;
-        summaryHTML += `</tbody></table>
-        <div class="signatures">
-            <div class="sign-line">
-                <p>Руководитель участка: ___________________</p>
-                <p style="font-size:9px;">(Ф.И.О., подпись)</p>
-            </div>
-            <div class="sign-line">
-                <p>Инженер по организации труда: ___________________</p>
-                <p style="font-size:9px;">(Ф.И.О., подпись)</p>
-            </div>
-        </div>
-        <div class="footer-note">
-            Отчет сформирован: ${currentDate} | Система Yamazumi Board<br>
-        </div>`;
-        
-        printContainer.innerHTML = summaryHTML;
-        document.body.appendChild(printContainer);
-        
-        window.print();
-        
-        // Удаляем временный контейнер после печати
-        document.body.removeChild(printContainer);
-        document.title = originalTitle;
-    }
-
-
-
+function printReport() {
+    const originalTitle = document.title;
+    document.title = "Yamazumi Board Chart";
+    window.print();
+    document.title = originalTitle;
+}
 </script>
 
 </body>
